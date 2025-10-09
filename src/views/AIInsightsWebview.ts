@@ -41,7 +41,7 @@ export class AIInsightsWebview {
                         this.shareAchievement(message.achievement?.id || message.achievementId);
                         break;
                     case 'learnMore':
-                        this.handleLearnMore(message.insightId || message.insight?.id);
+                        this.handleLearnMore(message.insight?.id || message.insightId);
                         break;
                 }
             },
