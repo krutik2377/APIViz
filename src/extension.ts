@@ -1,12 +1,14 @@
 import * as vscode from 'vscode';
 import { LatencyProvider } from './providers/LatencyProvider';
 import { EndpointsProvider } from './providers/EndpointsProvider';
+import { AIInsightsProvider } from './providers/AIInsightsProvider';
 import { WebSocketService } from './services/WebSocketService';
 import { DataProcessor } from './services/DataProcessor';
 import { InlineDecorator } from './services/InlineDecorator';
 import { StatusBarManager } from './services/StatusBarManager';
 import { ConfigurationManager } from './services/ConfigurationManager';
 import { CommandHandlers } from './commands';
+import { AIInsightsWebview } from './views/AIInsightsWebview';
 
 let webSocketService: WebSocketService;
 let dataProcessor: DataProcessor;
@@ -16,6 +18,8 @@ let inlineDecorator: InlineDecorator;
 let statusBarManager: StatusBarManager;
 let configurationManager: ConfigurationManager;
 let commandHandlers: CommandHandlers;
+let aiInsightsProvider: AIInsightsProvider;
+let aiInsightsWebview: AIInsightsWebview;
 
 export function activate(context: vscode.ExtensionContext) {
     console.log('APIViz extension is now active!');
@@ -30,13 +34,18 @@ export function activate(context: vscode.ExtensionContext) {
     // Initialize providers
     latencyProvider = new LatencyProvider(dataProcessor);
     endpointsProvider = new EndpointsProvider(dataProcessor);
-
+    aiInsightsProvider = new AIInsightsProvider(dataProcessor);
+    
     // Initialize command handlers
     commandHandlers = new CommandHandlers(dataProcessor, webSocketService);
+    
+    // Initialize AI insights webview
+    aiInsightsWebview = new AIInsightsWebview(dataProcessor);
 
     // Register tree data providers
     vscode.window.registerTreeDataProvider('apiviz.latencyView', latencyProvider);
     vscode.window.registerTreeDataProvider('apiviz.endpointsView', endpointsProvider);
+    vscode.window.registerTreeDataProvider('apiviz.aiInsightsView', aiInsightsProvider);
 
     // Register commands
     const startMonitoringCommand = vscode.commands.registerCommand('apiviz.startMonitoring', async () => {
@@ -90,7 +99,7 @@ export function activate(context: vscode.ExtensionContext) {
 
         const selection = editor.selection;
         const line = editor.document.lineAt(selection.active.line);
-
+        
         // Show quick pick with instrumentation options
         vscode.window.showQuickPick([
             'Add latency logging',
@@ -104,13 +113,18 @@ export function activate(context: vscode.ExtensionContext) {
         });
     });
 
+    const openAIInsightsCommand = vscode.commands.registerCommand('apiviz.openAIInsights', () => {
+        aiInsightsWebview.createWebview(context);
+    });
+
     // Register all commands
     context.subscriptions.push(
         startMonitoringCommand,
         stopMonitoringCommand,
         clearDataCommand,
         openSettingsCommand,
-        instrumentLineCommand
+        instrumentLineCommand,
+        openAIInsightsCommand
     );
 
     // Register additional command handlers
