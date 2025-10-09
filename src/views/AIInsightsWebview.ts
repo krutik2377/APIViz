@@ -111,11 +111,13 @@ export class AIInsightsWebview {
 
         if (insight.action?.command) {
             vscode.commands.executeCommand(insight.action.command, insight);
+            vscode.window.showInformationMessage(`Applied suggestion: ${insight.title}`);
         } else if (insight.action?.link) {
             vscode.env.openExternal(vscode.Uri.parse(insight.action.link));
+            vscode.window.showInformationMessage(`Applied suggestion: ${insight.title}`);
+        } else {
+            vscode.window.showInformationMessage(`No actionable item available for: ${insight.title}`);
         }
-
-        vscode.window.showInformationMessage(`Applied suggestion: ${insight.title}`);
     }
 
     private shareAchievement(achievementId?: string): void {
