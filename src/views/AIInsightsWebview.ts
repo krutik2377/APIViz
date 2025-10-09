@@ -135,47 +135,20 @@ export class AIInsightsWebview {
     }
 
     private handleLearnMore(insightId: string): void {
-        try {
-            // Get current insights to find the specific insight
-            const insights = this.aiAnalyzer.analyzePerformance(
-                this.dataProcessor.getPerformanceMetrics(),
-                this.dataProcessor.getEndpointStats(),
-                this.dataProcessor.getApiCalls()
-            );
+        const insight = this.latestInsights.find(i => i.id === insightId);
 
-            const insight = insights.find(i => i.id === insightId);
+        if (!insight) {
+            vscode.window.showWarningMessage('Unable to locate the selected insight.');
+            return;
+        }
 
-            if (!insight) {
-                console.error(`Insight with ID ${insightId} not found`);
-                this.panel?.webview.postMessage({
-                    type: 'error',
-                    message: 'Insight not found'
-                });
-                return;
-            }
-
-            // Mark insight as viewed/resolved (you can extend this with actual state management)
-            console.log(`User viewed insight: ${insight.title} (ID: ${insightId})`);
-
-            // Open the action link if available
-            if (insight.action?.link) {
-                vscode.env.openExternal(vscode.Uri.parse(insight.action.link));
-                vscode.window.showInformationMessage(`Opening: ${insight.title}`);
-            } else {
-                console.error(`No action link found for insight: ${insightId}`);
-                this.panel?.webview.postMessage({
-                    type: 'error',
-                    message: 'No action link available for this insight'
-                });
-                vscode.window.showWarningMessage(`No additional information available for: ${insight.title}`);
-            }
-        } catch (error) {
-            console.error('Error handling learn more:', error);
-            this.panel?.webview.postMessage({
-                type: 'error',
-                message: 'Failed to process learn more request'
-            });
-            vscode.window.showErrorMessage('Failed to open insight details');
+        if (insight.action?.link) {
+            vscode.env.openExternal(vscode.Uri.parse(insight.action.link));
+            vscode.window.showInformationMessage(`Opening: ${insight.title}`);
+        } else if (insight.action?.command) {
+            vscode.commands.executeCommand(insight.action.command, insight);
+        } else {
+            vscode.window.showInformationMessage(insight.message);
         }
     }
 
