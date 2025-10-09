@@ -1,0 +1,197 @@
+{
+    "name": "apiviz",
+    "displayName": "APIViz - Real-time API Latency Monitor",
+    "description": "Visualize API call latency in real-time directly in your VSCode editor",
+    "version": "0.1.0",
+    "publisher": "apiviz",
+    "engines": {
+        "vscode": "^1.74.0"
+    },
+    "categories": [
+        "Debuggers",
+        "Other",
+        "Visualization"
+    ],
+    "keywords": [
+        "api",
+        "latency",
+        "performance",
+        "monitoring",
+        "real-time",
+        "visualization"
+    ],
+    "activationEvents": [
+        "onCommand:apiviz.startMonitoring",
+        "onCommand:apiviz.stopMonitoring",
+        "onView:apiviz.latencyView"
+    ],
+    "main": "./out/extension.js",
+    "contributes": {
+        "commands": [
+            {
+                "command": "apiviz.startMonitoring",
+                "title": "Start API Monitoring",
+                "category": "APIViz"
+            },
+            {
+                "command": "apiviz.stopMonitoring",
+                "title": "Stop API Monitoring",
+                "category": "APIViz"
+            },
+            {
+                "command": "apiviz.clearData",
+                "title": "Clear Latency Data",
+                "category": "APIViz"
+            },
+            {
+                "command": "apiviz.openSettings",
+                "title": "Open Settings",
+                "category": "APIViz"
+            }
+        ],
+        "views": {
+            "explorer": [
+                {
+                    "id": "apiviz.latencyView",
+                    "name": "API Latency Monitor",
+                    "when": "apiviz.isMonitoring"
+                }
+            ]
+        },
+        "viewsContainers": {
+            "activitybar": [
+                {
+                    "id": "apiviz",
+                    "title": "APIViz",
+                    "icon": "$(pulse)"
+                }
+            ],
+            "panel": [
+                {
+                    "id": "apiviz.panel",
+                    "title": "API Latency Monitor",
+                    "icon": "$(graph)"
+                }
+            ]
+        },
+        "views": {
+            "apiviz": [
+                {
+                    "id": "apiviz.latencyView",
+                    "name": "Live Latency",
+                    "when": "apiviz.isMonitoring"
+                },
+                {
+                    "id": "apiviz.endpointsView",
+                    "name": "Endpoints",
+                    "when": "apiviz.isMonitoring"
+                }
+            ],
+            "apiviz.panel": [
+                {
+                    "id": "apiviz.chartsView",
+                    "name": "Performance Charts",
+                    "when": "apiviz.isMonitoring"
+                }
+            ]
+        },
+        "menus": {
+            "view/title": [
+                {
+                    "command": "apiviz.startMonitoring",
+                    "when": "view == apiviz.latencyView && !apiviz.isMonitoring",
+                    "group": "navigation"
+                },
+                {
+                    "command": "apiviz.stopMonitoring",
+                    "when": "view == apiviz.latencyView && apiviz.isMonitoring",
+                    "group": "navigation"
+                },
+                {
+                    "command": "apiviz.clearData",
+                    "when": "view == apiviz.latencyView",
+                    "group": "navigation"
+                }
+            ],
+            "editor/context": [
+                {
+                    "command": "apiviz.instrumentLine",
+                    "when": "editorTextFocus",
+                    "group": "apiviz"
+                }
+            ]
+        },
+        "configuration": {
+            "title": "APIViz",
+            "properties": {
+                "apiviz.agentPort": {
+                    "type": "number",
+                    "default": 3001,
+                    "description": "Port for the local APIViz agent server"
+                },
+                "apiviz.samplingRate": {
+                    "type": "number",
+                    "default": 1.0,
+                    "minimum": 0.1,
+                    "maximum": 1.0,
+                    "description": "Sampling rate for API calls (0.1 = 10%, 1.0 = 100%)"
+                },
+                "apiviz.minLatencyThreshold": {
+                    "type": "number",
+                    "default": 10,
+                    "description": "Minimum latency threshold in milliseconds (calls below this are ignored)"
+                },
+                "apiviz.maxDataPoints": {
+                    "type": "number",
+                    "default": 1000,
+                    "description": "Maximum number of data points to keep in memory"
+                },
+                "apiviz.autoStart": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Automatically start monitoring when extension activates"
+                },
+                "apiviz.showInlineDecorations": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Show latency decorations inline next to API calls"
+                },
+                "apiviz.endpointFilters": {
+                    "type": "array",
+                    "default": [
+                        "/api/*"
+                    ],
+                    "description": "URL patterns to monitor (supports wildcards)"
+                }
+            }
+        }
+    },
+    "scripts": {
+        "vscode:prepublish": "npm run compile",
+        "compile": "tsc -p ./",
+        "watch": "tsc -watch -p ./",
+        "pretest": "npm run compile && npm run lint",
+        "lint": "eslint src --ext ts",
+        "test": "node ./out/test/runTest.js",
+        "package": "vsce package",
+        "agent:dev": "cd agent && npm run dev",
+        "agent:build": "cd agent && npm run build",
+        "dev": "concurrently \"npm run watch\" \"npm run agent:dev\"",
+        "postinstall": "cd agent && npm install"
+    },
+    "devDependencies": {
+        "@types/vscode": "^1.74.0",
+        "@types/node": "16.x",
+        "@typescript-eslint/eslint-plugin": "^5.45.0",
+        "@typescript-eslint/parser": "^5.45.0",
+        "eslint": "^8.28.0",
+        "typescript": "^4.9.4",
+        "@vscode/test-electron": "^2.2.0",
+        "vsce": "^2.15.0",
+        "concurrently": "^7.6.0"
+    },
+    "dependencies": {
+        "ws": "^8.13.0",
+        "axios": "^1.4.0"
+    }
+}
