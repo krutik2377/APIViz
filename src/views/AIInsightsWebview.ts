@@ -6,6 +6,8 @@ export class AIInsightsWebview {
     private panel: vscode.WebviewPanel | undefined;
     private dataProcessor: DataProcessor;
     private aiAnalyzer: AIPerformanceAnalyzer;
+    private latestInsights: PerformanceInsight[] = [];
+    private latestPerformanceScore: PerformanceScore | null = null;
 
     constructor(dataProcessor: DataProcessor) {
         this.dataProcessor = dataProcessor;
@@ -33,10 +35,13 @@ export class AIInsightsWebview {
                         this.sendInsightsToWebview();
                         break;
                     case 'applySuggestion':
-                        this.applySuggestion(message.insight);
+                        this.applySuggestion(message.insight?.id || message.insightId);
                         break;
                     case 'shareAchievement':
-                        this.shareAchievement(message.achievement);
+                        this.shareAchievement(message.achievement?.id || message.achievementId);
+                        break;
+                    case 'learnMore':
+                        this.handleLearnMore(message.insightId || message.insight?.id);
                         break;
                 }
             },
@@ -81,6 +86,10 @@ export class AIInsightsWebview {
         const insights = this.aiAnalyzer.analyzePerformance(metrics, endpointStats, recentCalls);
         const performanceScore = this.aiAnalyzer.calculatePerformanceScore(metrics, endpointStats, recentCalls);
 
+        // Store the latest insights and performance score for lookup by ID
+        this.latestInsights = insights;
+        this.latestPerformanceScore = performanceScore;
+
         this.panel.webview.postMessage({
             type: 'insights',
             data: {
@@ -92,21 +101,82 @@ export class AIInsightsWebview {
         });
     }
 
-    private applySuggestion(insight: PerformanceInsight): void {
+    private applySuggestion(insightId?: string): void {
+        const insight = insightId ? this.latestInsights.find(item => item.id === insightId) : undefined;
+
+        if (!insight) {
+            vscode.window.showWarningMessage('Unable to locate the selected insight.');
+            return;
+        }
+
         if (insight.action?.command) {
             vscode.commands.executeCommand(insight.action.command, insight);
         } else if (insight.action?.link) {
             vscode.env.openExternal(vscode.Uri.parse(insight.action.link));
         }
-        
+
         vscode.window.showInformationMessage(`Applied suggestion: ${insight.title}`);
     }
 
-    private shareAchievement(achievement: any): void {
+    private shareAchievement(achievementId?: string): void {
+        const achievement = achievementId && this.latestPerformanceScore
+            ? this.latestPerformanceScore.achievements.find(item => item.id === achievementId)
+            : undefined;
+
+        if (!achievement) {
+            vscode.window.showWarningMessage('Unable to locate the selected achievement.');
+            return;
+        }
+
         const message = `🏆 Just unlocked "${achievement.name}" in APIViz! ${achievement.description} #APIViz #Performance #DeveloperTools`;
-        
+
         vscode.env.clipboard.writeText(message);
         vscode.window.showInformationMessage('Achievement copied to clipboard! Share it on social media! 🚀');
+    }
+
+    private handleLearnMore(insightId: string): void {
+        try {
+            // Get current insights to find the specific insight
+            const insights = this.aiAnalyzer.analyzePerformance(
+                this.dataProcessor.getPerformanceMetrics(),
+                this.dataProcessor.getEndpointStats(),
+                this.dataProcessor.getApiCalls()
+            );
+
+            const insight = insights.find(i => i.id === insightId);
+
+            if (!insight) {
+                console.error(`Insight with ID ${insightId} not found`);
+                this.panel?.webview.postMessage({
+                    type: 'error',
+                    message: 'Insight not found'
+                });
+                return;
+            }
+
+            // Mark insight as viewed/resolved (you can extend this with actual state management)
+            console.log(`User viewed insight: ${insight.title} (ID: ${insightId})`);
+
+            // Open the action link if available
+            if (insight.action?.link) {
+                vscode.env.openExternal(vscode.Uri.parse(insight.action.link));
+                vscode.window.showInformationMessage(`Opening: ${insight.title}`);
+            } else {
+                console.error(`No action link found for insight: ${insightId}`);
+                this.panel?.webview.postMessage({
+                    type: 'error',
+                    message: 'No action link available for this insight'
+                });
+                vscode.window.showWarningMessage(`No additional information available for: ${insight.title}`);
+            }
+        } catch (error) {
+            console.error('Error handling learn more:', error);
+            this.panel?.webview.postMessage({
+                type: 'error',
+                message: 'Failed to process learn more request'
+            });
+            vscode.window.showErrorMessage('Failed to open insight details');
+        }
     }
 
     private getWebviewContent(): string {

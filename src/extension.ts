@@ -35,10 +35,10 @@ export function activate(context: vscode.ExtensionContext) {
     latencyProvider = new LatencyProvider(dataProcessor);
     endpointsProvider = new EndpointsProvider(dataProcessor);
     aiInsightsProvider = new AIInsightsProvider(dataProcessor);
-    
+
     // Initialize command handlers
     commandHandlers = new CommandHandlers(dataProcessor, webSocketService);
-    
+
     // Initialize AI insights webview
     aiInsightsWebview = new AIInsightsWebview(dataProcessor);
 
@@ -99,7 +99,7 @@ export function activate(context: vscode.ExtensionContext) {
 
         const selection = editor.selection;
         const line = editor.document.lineAt(selection.active.line);
-        
+
         // Show quick pick with instrumentation options
         vscode.window.showQuickPick([
             'Add latency logging',
