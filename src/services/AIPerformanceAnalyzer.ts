@@ -474,7 +474,8 @@ export class AIPerformanceAnalyzer {
     private analyzeLatencyTrend(calls: ApiCall[]): { isIncreasing: boolean; rate: number } {
         if (calls.length < 10) return { isIncreasing: false, rate: 0 };
 
-        const sortedCalls = calls.sort((a, b) => a.timestamp - b.timestamp);
+        // Copy array before sorting to avoid mutating input
+        const sortedCalls = [...calls].sort((a, b) => a.timestamp - b.timestamp);
         const firstHalf = sortedCalls.slice(0, Math.floor(sortedCalls.length / 2));
         const secondHalf = sortedCalls.slice(Math.floor(sortedCalls.length / 2));
 
@@ -482,8 +483,17 @@ export class AIPerformanceAnalyzer {
         const secondAvg = secondHalf.reduce((sum, call) => sum + call.latency, 0) / secondHalf.length;
 
         const timeDiff = (secondHalf[0].timestamp - firstHalf[0].timestamp) / (1000 * 60 * 60); // hours
+
+        // Guard against divide-by-zero when timeDiff is zero or negative
+        if (timeDiff <= 0) {
+            return { isIncreasing: false, rate: 0 };
+        }
+
         const rate = (secondAvg - firstAvg) / timeDiff;
 
-        return { isIncreasing: rate > 10, rate };
+        // Ensure the computed rate is finite
+        const sanitizedRate = isFinite(rate) ? rate : 0;
+
+        return { isIncreasing: sanitizedRate > 10, rate: sanitizedRate };
     }
 }

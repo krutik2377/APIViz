@@ -2,6 +2,18 @@ import * as vscode from 'vscode';
 import { DataProcessor } from '../services/DataProcessor';
 import { ApiCall, EndpointStats, LatencyDataPoint } from '../types';
 
+/**
+ * Advanced Visualizations Webview
+ * 
+ * Required static files in media/ directory:
+ * - three.min.js (Three.js library)
+ * - chart.min.js (Chart.js library)
+ * 
+ * Download from:
+ * - Three.js: https://cdn.jsdelivr.net/npm/three@0.150.1/build/three.min.js
+ * - Chart.js: https://cdn.jsdelivr.net/npm/chart.js/dist/chart.min.js
+ */
+
 export class AdvancedVisualizations {
     private panel: vscode.WebviewPanel | undefined;
     private dataProcessor: DataProcessor;
@@ -21,7 +33,7 @@ export class AdvancedVisualizations {
             }
         );
 
-        this.panel.webview.html = this.getWebviewContent();
+        this.panel.webview.html = this.getWebviewContent(context);
 
         // Handle messages from the webview
         this.panel.webview.onDidReceiveMessage(
@@ -51,6 +63,8 @@ export class AdvancedVisualizations {
 
         this.panel.onDidDispose(() => {
             clearInterval(refreshInterval);
+            // Send dispose message to webview to stop animation loop
+            this.panel?.webview.postMessage({ type: 'dispose' });
         });
 
         return this.panel;
@@ -86,15 +100,29 @@ export class AdvancedVisualizations {
         }
     }
 
-    private getWebviewContent(): string {
+    private getWebviewContent(context: vscode.ExtensionContext): string {
+        // Generate a nonce for security
+        const nonce = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+
+        // Create webview URIs for local static files
+        const threeJsUri = this.panel?.webview.asWebviewUri(
+            context.extensionUri.with({ path: 'media/three.min.js' })
+        );
+        const chartJsUri = this.panel?.webview.asWebviewUri(
+            context.extensionUri.with({ path: 'media/chart.min.js' })
+        );
         return `<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" 
+          content="default-src 'none'; 
+                   script-src 'nonce-${nonce}'; 
+                   style-src 'self' 'unsafe-inline';">
     <title>Advanced Performance Visualizations</title>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.150.1/build/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script nonce="${nonce}" src="${threeJsUri}"></script>
+    <script nonce="${nonce}" src="${chartJsUri}"></script>
     <style>
         body {
             font-family: var(--vscode-font-family);
@@ -336,11 +364,11 @@ export class AdvancedVisualizations {
         </div>
         
         <div class="visualization-selector">
-            <button class="viz-btn active" onclick="changeVisualization('3d')">🌌 3D Performance Galaxy</button>
-            <button class="viz-btn" onclick="changeVisualization('heatmap')">🔥 Performance Heatmap</button>
-            <button class="viz-btn" onclick="changeVisualization('particles')">✨ Particle System</button>
-            <button class="viz-btn" onclick="changeVisualization('ocean')">🐠 Performance Ocean</button>
-            <button class="viz-btn" onclick="changeVisualization('city')">🏙️ Performance City</button>
+            <button class="viz-btn active" onclick="changeVisualization('3d', this, { fromExtension: false })">🌌 3D Performance Galaxy</button>
+            <button class="viz-btn" onclick="changeVisualization('heatmap', this, { fromExtension: false })">🔥 Performance Heatmap</button>
+            <button class="viz-btn" onclick="changeVisualization('particles', this, { fromExtension: false })">✨ Particle System</button>
+            <button class="viz-btn" onclick="changeVisualization('ocean', this, { fromExtension: false })">🐠 Performance Ocean</button>
+            <button class="viz-btn" onclick="changeVisualization('city', this, { fromExtension: false })">🏙️ Performance City</button>
         </div>
         
         <div class="visualization-container">
@@ -353,7 +381,7 @@ export class AdvancedVisualizations {
         </div>
     </div>
 
-    <script>
+    <script nonce="${nonce}">
         const vscode = acquireVsCodeApi();
         let currentVisualization = '3d';
         let scene, camera, renderer;
@@ -367,17 +395,32 @@ export class AdvancedVisualizations {
                     updateVisualization(message.data);
                     break;
                 case 'changeViz':
-                    changeVisualization(message.data.visualizationType);
+                    changeVisualization(message.data.visualizationType, null, { fromExtension: true });
+                    break;
+                case 'dispose':
+                    // Stop animation loop and cleanup
+                    if (animationId) {
+                        cancelAnimationFrame(animationId);
+                        animationId = null;
+                    }
                     break;
             }
         });
         
-        function changeVisualization(type) {
+        function changeVisualization(type, btn, { fromExtension = false } = {}) {
             currentVisualization = type;
             
-            // Update button states
-            document.querySelectorAll('.viz-btn').forEach(btn => btn.classList.remove('active'));
-            event.target.classList.add('active');
+            // Cancel any previous animation loop
+            if (animationId) {
+                cancelAnimationFrame(animationId);
+                animationId = null;
+            }
+            
+            // Update button states (only if button is provided)
+            document.querySelectorAll('.viz-btn').forEach(button => button.classList.remove('active'));
+            if (btn) {
+                btn.classList.add('active');
+            }
             
             // Clear current visualization
             const content = document.getElementById('visualization-content');
@@ -402,7 +445,10 @@ export class AdvancedVisualizations {
                     break;
             }
             
-            vscode.postMessage({ command: 'changeVisualization', type: type });
+            // Only post message if not called from extension (avoid ping-pong loop)
+            if (!fromExtension) {
+                vscode.postMessage({ command: 'changeVisualization', type: type });
+            }
         }
         
         function create3DVisualization() {

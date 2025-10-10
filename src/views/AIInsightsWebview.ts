@@ -12,6 +12,15 @@ export class AIInsightsWebview {
         this.aiAnalyzer = new AIPerformanceAnalyzer();
     }
 
+    private getNonce(): string {
+        let text = '';
+        const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+        for (let i = 0; i < 32; i++) {
+            text += possible.charAt(Math.floor(Math.random() * possible.length));
+        }
+        return text;
+    }
+
     public createWebview(context: vscode.ExtensionContext): vscode.WebviewPanel {
         this.panel = vscode.window.createWebviewPanel(
             'apivizAIInsights',
@@ -23,7 +32,8 @@ export class AIInsightsWebview {
             }
         );
 
-        this.panel.webview.html = this.getWebviewContent();
+        const nonce = this.getNonce();
+        this.panel.webview.html = this.getWebviewContent(nonce, context.extensionUri);
 
         // Handle messages from the webview
         this.panel.webview.onDidReceiveMessage(
@@ -109,14 +119,24 @@ export class AIInsightsWebview {
         vscode.window.showInformationMessage('Achievement copied to clipboard! Share it on social media! 🚀');
     }
 
-    private getWebviewContent(): string {
+    private getWebviewContent(nonce: string, extUri: vscode.Uri): string {
+        const chartJsUri = this.panel!.webview.asWebviewUri(
+            vscode.Uri.joinPath(extUri, 'media', 'chart.min.js')
+        );
+
         return `<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" 
+          content="default-src 'none'; 
+                   img-src ${this.panel!.webview.cspSource} https:; 
+                   style-src ${this.panel!.webview.cspSource} 'unsafe-inline'; 
+                   font-src ${this.panel!.webview.cspSource}; 
+                   script-src 'nonce-${nonce}';">
     <title>AI Performance Insights</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script nonce="${nonce}" src="${chartJsUri}"></script>
     <style>
         body {
             font-family: var(--vscode-font-family);
@@ -432,7 +452,7 @@ export class AIInsightsWebview {
         </div>
     </div>
 
-    <script>
+    <script nonce="${nonce}">
         const vscode = acquireVsCodeApi();
         
         // Handle messages from extension
