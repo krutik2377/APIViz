@@ -52,6 +52,11 @@
                 "command": "apiviz.openAIInsights",
                 "title": "Open AI Insights",
                 "category": "APIViz"
+            },
+            {
+                "command": "apiviz.openAdvancedViz",
+                "title": "Open Advanced Visualizations",
+                "category": "APIViz"
             }
         ],
         "views": {
