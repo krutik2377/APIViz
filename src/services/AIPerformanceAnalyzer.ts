@@ -335,12 +335,6 @@ export class AIPerformanceAnalyzer {
 
     private calculateReliabilityScore(metrics: PerformanceMetrics, endpointStats: EndpointStats[]): number {
         const errorRate = metrics.errorRate;
-
-        // Guard against divide-by-zero when endpointStats is empty
-        if (endpointStats.length === 0) {
-            return 100; // Baseline reliability score when no endpoint data available
-        }
-
         const avgErrorRate = endpointStats.reduce((sum, stat) => sum + stat.errorRate, 0) / endpointStats.length;
 
         if (errorRate < 1 && avgErrorRate < 1) return 100;
@@ -480,6 +474,7 @@ export class AIPerformanceAnalyzer {
     private analyzeLatencyTrend(calls: ApiCall[]): { isIncreasing: boolean; rate: number } {
         if (calls.length < 10) return { isIncreasing: false, rate: 0 };
 
+        // Copy array before sorting to avoid mutating input
         const sortedCalls = [...calls].sort((a, b) => a.timestamp - b.timestamp);
         const firstHalf = sortedCalls.slice(0, Math.floor(sortedCalls.length / 2));
         const secondHalf = sortedCalls.slice(Math.floor(sortedCalls.length / 2));
@@ -496,6 +491,9 @@ export class AIPerformanceAnalyzer {
 
         const rate = (secondAvg - firstAvg) / timeDiff;
 
-        return { isIncreasing: rate > 10, rate };
+        // Ensure the computed rate is finite
+        const sanitizedRate = isFinite(rate) ? rate : 0;
+
+        return { isIncreasing: sanitizedRate > 10, rate: sanitizedRate };
     }
 }

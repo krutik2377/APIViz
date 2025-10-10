@@ -9,6 +9,7 @@ import { StatusBarManager } from './services/StatusBarManager';
 import { ConfigurationManager } from './services/ConfigurationManager';
 import { CommandHandlers } from './commands';
 import { AIInsightsWebview } from './views/AIInsightsWebview';
+import { AdvancedVisualizations } from './views/AdvancedVisualizations';
 
 let webSocketService: WebSocketService;
 let dataProcessor: DataProcessor;
@@ -20,6 +21,7 @@ let configurationManager: ConfigurationManager;
 let commandHandlers: CommandHandlers;
 let aiInsightsProvider: AIInsightsProvider;
 let aiInsightsWebview: AIInsightsWebview;
+let advancedVisualizations: AdvancedVisualizations;
 
 export function activate(context: vscode.ExtensionContext) {
     console.log('APIViz extension is now active!');
@@ -41,6 +43,9 @@ export function activate(context: vscode.ExtensionContext) {
 
     // Initialize AI insights webview
     aiInsightsWebview = new AIInsightsWebview(dataProcessor);
+
+    // Initialize advanced visualizations
+    advancedVisualizations = new AdvancedVisualizations(dataProcessor);
 
     // Register tree data providers
     vscode.window.registerTreeDataProvider('apiviz.latencyView', latencyProvider);
@@ -117,6 +122,10 @@ export function activate(context: vscode.ExtensionContext) {
         aiInsightsWebview.createWebview(context);
     });
 
+    const openAdvancedVizCommand = vscode.commands.registerCommand('apiviz.openAdvancedViz', () => {
+        advancedVisualizations.createWebview(context);
+    });
+
     // Register all commands
     context.subscriptions.push(
         startMonitoringCommand,
@@ -124,7 +133,8 @@ export function activate(context: vscode.ExtensionContext) {
         clearDataCommand,
         openSettingsCommand,
         instrumentLineCommand,
-        openAIInsightsCommand
+        openAIInsightsCommand,
+        openAdvancedVizCommand
     );
 
     // Register additional command handlers

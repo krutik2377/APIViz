@@ -6,12 +6,19 @@ export class AIInsightsWebview {
     private panel: vscode.WebviewPanel | undefined;
     private dataProcessor: DataProcessor;
     private aiAnalyzer: AIPerformanceAnalyzer;
-    private latestInsights: PerformanceInsight[] = [];
-    private latestPerformanceScore: PerformanceScore | null = null;
 
     constructor(dataProcessor: DataProcessor) {
         this.dataProcessor = dataProcessor;
         this.aiAnalyzer = new AIPerformanceAnalyzer();
+    }
+
+    private getNonce(): string {
+        let text = '';
+        const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+        for (let i = 0; i < 32; i++) {
+            text += possible.charAt(Math.floor(Math.random() * possible.length));
+        }
+        return text;
     }
 
     public createWebview(context: vscode.ExtensionContext): vscode.WebviewPanel {
@@ -25,7 +32,8 @@ export class AIInsightsWebview {
             }
         );
 
-        this.panel.webview.html = this.getWebviewContent();
+        const nonce = this.getNonce();
+        this.panel.webview.html = this.getWebviewContent(nonce, context.extensionUri);
 
         // Handle messages from the webview
         this.panel.webview.onDidReceiveMessage(
@@ -35,13 +43,10 @@ export class AIInsightsWebview {
                         this.sendInsightsToWebview();
                         break;
                     case 'applySuggestion':
-                        this.applySuggestion(message.insight?.id || message.insightId);
+                        this.applySuggestion(message.insight);
                         break;
                     case 'shareAchievement':
-                        this.shareAchievement(message.achievement?.id || message.achievementId);
-                        break;
-                    case 'learnMore':
-                        this.handleLearnMore(message.insight?.id || message.insightId);
+                        this.shareAchievement(message.achievement);
                         break;
                 }
             },
@@ -86,10 +91,6 @@ export class AIInsightsWebview {
         const insights = this.aiAnalyzer.analyzePerformance(metrics, endpointStats, recentCalls);
         const performanceScore = this.aiAnalyzer.calculatePerformanceScore(metrics, endpointStats, recentCalls);
 
-        // Store the latest insights and performance score for lookup by ID
-        this.latestInsights = insights;
-        this.latestPerformanceScore = performanceScore;
-
         this.panel.webview.postMessage({
             type: 'insights',
             data: {
@@ -101,70 +102,41 @@ export class AIInsightsWebview {
         });
     }
 
-    private applySuggestion(insightId?: string): void {
-        const insight = insightId ? this.latestInsights.find(item => item.id === insightId) : undefined;
-
-        if (!insight) {
-            vscode.window.showWarningMessage('Unable to locate the selected insight.');
-            return;
-        }
-
+    private applySuggestion(insight: PerformanceInsight): void {
         if (insight.action?.command) {
             vscode.commands.executeCommand(insight.action.command, insight);
-            vscode.window.showInformationMessage(`Applied suggestion: ${insight.title}`);
         } else if (insight.action?.link) {
             vscode.env.openExternal(vscode.Uri.parse(insight.action.link));
-            vscode.window.showInformationMessage(`Applied suggestion: ${insight.title}`);
-        } else {
-            vscode.window.showInformationMessage(`No actionable item available for: ${insight.title}`);
         }
+
+        vscode.window.showInformationMessage(`Applied suggestion: ${insight.title}`);
     }
 
-    private shareAchievement(achievementId?: string): void {
-        const achievement = achievementId && this.latestPerformanceScore
-            ? this.latestPerformanceScore.achievements.find(item => item.id === achievementId)
-            : undefined;
-
-        if (!achievement) {
-            vscode.window.showWarningMessage('Unable to locate the selected achievement.');
-            return;
-        }
-
+    private shareAchievement(achievement: any): void {
         const message = `🏆 Just unlocked "${achievement.name}" in APIViz! ${achievement.description} #APIViz #Performance #DeveloperTools`;
 
         vscode.env.clipboard.writeText(message);
         vscode.window.showInformationMessage('Achievement copied to clipboard! Share it on social media! 🚀');
     }
 
-    private handleLearnMore(insightId: string): void {
-        const insight = this.latestInsights.find(i => i.id === insightId);
+    private getWebviewContent(nonce: string, extUri: vscode.Uri): string {
+        const chartJsUri = this.panel!.webview.asWebviewUri(
+            vscode.Uri.joinPath(extUri, 'media', 'chart.min.js')
+        );
 
-        if (!insight) {
-            vscode.window.showWarningMessage('Unable to locate the selected insight.');
-            return;
-        }
-
-        if (insight.action?.link) {
-            vscode.env.openExternal(vscode.Uri.parse(insight.action.link));
-            vscode.window.showInformationMessage(`Opening: ${insight.title}`);
-        } else if (insight.action?.command) {
-            vscode.commands.executeCommand(insight.action.command, insight);
-        } else {
-            vscode.window.showInformationMessage(insight.message);
-        }
-    }
-
-    private getWebviewContent(): string {
         return `<!DOCTYPE html>
 <html lang="en">
-    <head>
+<head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="Content-Security-Policy" 
           content="default-src 'none'; 
-                   style-src 'unsafe-inline'; 
-                   script-src 'unsafe-inline';">
+                   img-src ${this.panel!.webview.cspSource} https:; 
+                   style-src ${this.panel!.webview.cspSource} 'unsafe-inline'; 
+                   font-src ${this.panel!.webview.cspSource}; 
+                   script-src 'nonce-${nonce}';">
     <title>AI Performance Insights</title>
+    <script nonce="${nonce}" src="${chartJsUri}"></script>
     <style>
         body {
             font-family: var(--vscode-font-family);
@@ -480,7 +452,7 @@ export class AIInsightsWebview {
         </div>
     </div>
 
-    <script>
+    <script nonce="${nonce}">
         const vscode = acquireVsCodeApi();
         
         // Handle messages from extension
