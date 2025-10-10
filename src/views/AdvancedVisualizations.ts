@@ -61,9 +61,12 @@ export class AdvancedVisualizations {
             }
         }, 3000);
 
-        // Handle view state changes to stop animations when panel becomes hidden
+        // Handle view state changes to stop/resume animations based on visibility
         this.panel.onDidChangeViewState(e => {
-            if (!e.webviewPanel.visible) {
+            if (e.webviewPanel.visible) {
+                // Panel is visible, resume animations
+                this.panel?.webview.postMessage({ type: 'resume' });
+            } else {
                 // Panel is hidden, stop animations
                 this.panel?.webview.postMessage({ type: 'dispose' });
             }
@@ -366,6 +369,42 @@ export class AdvancedVisualizations {
             border-radius: 10px;
             backdrop-filter: blur(10px);
         }
+        
+        .error-message {
+            text-align: center;
+            padding: 40px;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            margin: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        
+        .error-message h3 {
+            color: #e74c3c;
+            margin-bottom: 15px;
+            font-size: 1.5em;
+        }
+        
+        .error-message p {
+            color: #666;
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+        
+        .fallback-btn {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: background 0.3s ease;
+        }
+        
+        .fallback-btn:hover {
+            background: #2980b9;
+        }
     </style>
 </head>
 <body>
@@ -408,6 +447,12 @@ export class AdvancedVisualizations {
                     break;
                 case 'changeViz':
                     changeVisualization(message.data.visualizationType, null, { fromExtension: true });
+                    break;
+                case 'resume':
+                    // Resume animations if 3D visualization is active and scene exists
+                    if (currentVisualization === '3d' && scene && !animationId) {
+                        animate();
+                    }
                     break;
                 case 'dispose':
                     // Stop animation loop and cleanup
@@ -473,6 +518,21 @@ export class AdvancedVisualizations {
         
         function create3DVisualization() {
             const container = document.getElementById('visualization-content');
+            
+            // Check if THREE.js is available
+            if (typeof THREE === 'undefined' || !window.THREE) {
+                container.innerHTML = \`
+                    <div class="error-message">
+                        <h3>⚠️ Three.js Library Not Available</h3>
+                        <p>Failed to load Three.js library. Please check your internet connection and try refreshing the webview.</p>
+                        <button onclick="changeVisualization('heatmap', this, { fromExtension: false })" class="fallback-btn">
+                            Switch to Heatmap Visualization
+                        </button>
+                    </div>
+                \`;
+                return;
+            }
+            
             container.innerHTML = '<div id="threejs-container"></div>';
             
             // Initialize Three.js
