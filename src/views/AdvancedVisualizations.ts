@@ -105,11 +105,12 @@ export class AdvancedVisualizations {
         const nonce = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
 
         // Create webview URIs for local static files
-        const threeJsUri = this.panel?.webview.asWebviewUri(
-            context.extensionUri.with({ path: 'media/three.min.js' })
+        const webview = this.panel!.webview;
+        const threeJsUri = webview.asWebviewUri(
+            vscode.Uri.joinPath(context.extensionUri, 'media', 'three.min.js')
         );
-        const chartJsUri = this.panel?.webview.asWebviewUri(
-            context.extensionUri.with({ path: 'media/chart.min.js' })
+        const chartJsUri = webview.asWebviewUri(
+            vscode.Uri.joinPath(context.extensionUri, 'media', 'chart.min.js')
         );
         return `<!DOCTYPE html>
 <html lang="en">
