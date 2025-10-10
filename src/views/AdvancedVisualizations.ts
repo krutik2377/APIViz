@@ -61,10 +61,16 @@ export class AdvancedVisualizations {
             }
         }, 3000);
 
+        // Handle view state changes to stop animations when panel becomes hidden
+        this.panel.onDidChangeViewState(e => {
+            if (!e.webviewPanel.visible) {
+                // Panel is hidden, stop animations
+                this.panel?.webview.postMessage({ type: 'dispose' });
+            }
+        });
+
         this.panel.onDidDispose(() => {
             clearInterval(refreshInterval);
-            // Send dispose message to webview to stop animation loop
-            this.panel?.webview.postMessage({ type: 'dispose' });
         });
 
         return this.panel;
@@ -101,11 +107,16 @@ export class AdvancedVisualizations {
     }
 
     private getWebviewContent(context: vscode.ExtensionContext): string {
+        // Guard against undefined panel
+        if (!this.panel) {
+            throw new Error('Webview panel is not initialized. Call createWebview() first.');
+        }
+
         // Generate a nonce for security
         const nonce = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
 
         // Create webview URIs for local static files
-        const webview = this.panel!.webview;
+        const webview = this.panel.webview;
         const threeJsUri = webview.asWebviewUri(
             vscode.Uri.joinPath(context.extensionUri, 'media', 'three.min.js')
         );
@@ -405,6 +416,14 @@ export class AdvancedVisualizations {
                         animationId = null;
                     }
                     break;
+            }
+        });
+        
+        // Client-side cleanup to stop animations when webview is unloaded
+        window.addEventListener('beforeunload', () => {
+            if (animationId) {
+                cancelAnimationFrame(animationId);
+                animationId = null;
             }
         });
         
