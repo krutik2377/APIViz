@@ -191,6 +191,7 @@ export class AdvancedVisualizations {
         }
         
         .visualization-container {
+            position: relative;
             background: rgba(255, 255, 255, 0.95);
             border-radius: 20px;
             padding: 30px;
@@ -339,10 +340,28 @@ export class AdvancedVisualizations {
             67%, 100% { background: #F44336; }
         }
         
+        .no-data-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            z-index: 10;
+        }
+        
+        .no-data-overlay.hidden {
+            display: none;
+        }
+        
         .no-data {
             text-align: center;
             padding: 50px;
-            color: white;
+            color: #333;
         }
         
         .no-data h2 {
@@ -424,6 +443,9 @@ export class AdvancedVisualizations {
         
         <div class="visualization-container">
             <div id="visualization-content">
+                <!-- Visualization content will be created here -->
+            </div>
+            <div id="no-data-overlay" class="no-data-overlay">
                 <div class="no-data">
                     <h2>🚀 Ready for Advanced Visualizations</h2>
                     <p>Start monitoring your APIs to see stunning performance visualizations!</p>
@@ -698,14 +720,38 @@ export class AdvancedVisualizations {
         }
         
         function updateVisualization(data) {
+            const overlay = document.getElementById('no-data-overlay');
+            
             if (data.metrics.totalCalls === 0) {
-                document.getElementById('visualization-content').innerHTML = \`
-                    <div class="no-data">
-                        <h2>🚀 Ready for Advanced Visualizations</h2>
-                        <p>Start monitoring your APIs to see stunning performance visualizations!</p>
-                    </div>
-                \`;
+                // Show no-data overlay
+                overlay.classList.remove('hidden');
                 return;
+            } else {
+                // Hide no-data overlay
+                overlay.classList.add('hidden');
+                
+                // Initialize visualization if not already created
+                const content = document.getElementById('visualization-content');
+                if (content.children.length === 0) {
+                    // No visualization created yet, create the current one
+                    switch (currentVisualization) {
+                        case '3d':
+                            create3DVisualization();
+                            break;
+                        case 'heatmap':
+                            createHeatmapVisualization();
+                            break;
+                        case 'particles':
+                            createParticleVisualization();
+                            break;
+                        case 'ocean':
+                            createOceanVisualization();
+                            break;
+                        case 'city':
+                            createCityVisualization();
+                            break;
+                    }
+                }
             }
             
             // Update current visualization with real data
