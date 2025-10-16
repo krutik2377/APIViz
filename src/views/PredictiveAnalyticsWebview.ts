@@ -208,14 +208,26 @@ export class PredictiveAnalyticsWebview {
         );
     }
 
+    private generateNonce(): string {
+        const array = new Uint8Array(16);
+        crypto.getRandomValues(array);
+        return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
+    }
+
     private getWebviewContent(): string {
+        const nonce = this.generateNonce();
+        const chartJsUri = this.panel?.webview.asWebviewUri(
+            vscode.Uri.joinPath(vscode.Uri.file(__dirname), '..', '..', 'media', 'chart.umd.js')
+        );
+
         return `<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'nonce-${nonce}' vscode-webview:; img-src vscode-webview: https:; connect-src vscode-webview:;">
     <title>APIViz Predictive Analytics</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script nonce="${nonce}" src="${chartJsUri}"></script>
     <style>
         body {
             font-family: var(--vscode-font-family);
@@ -603,11 +615,11 @@ export class PredictiveAnalyticsWebview {
         </div>
         
         <div class="tabs">
-            <button class="tab active" onclick="showTab('predictions')">🎯 Predictions</button>
-            <button class="tab" onclick="showTab('anomalies')">🚨 Anomalies</button>
-            <button class="tab" onclick="showTab('alerts')">🔔 Alerts</button>
-            <button class="tab" onclick="showTab('insights')">💡 Insights</button>
-            <button class="tab" onclick="showTab('forecast')">📈 Forecast</button>
+            <button class="tab active" onclick="showTab('predictions', this)">🎯 Predictions</button>
+            <button class="tab" onclick="showTab('anomalies', this)">🚨 Anomalies</button>
+            <button class="tab" onclick="showTab('alerts', this)">🔔 Alerts</button>
+            <button class="tab" onclick="showTab('insights', this)">💡 Insights</button>
+            <button class="tab" onclick="showTab('forecast', this)">📈 Forecast</button>
         </div>
         
         <!-- Predictions Tab -->
@@ -718,7 +730,7 @@ export class PredictiveAnalyticsWebview {
             }
         });
         
-        function showTab(tabName) {
+        function showTab(tabName, element) {
             // Hide all tabs
             document.querySelectorAll('.tab-content').forEach(tab => {
                 tab.classList.remove('active');
@@ -729,7 +741,9 @@ export class PredictiveAnalyticsWebview {
             
             // Show selected tab
             document.getElementById(tabName).classList.add('active');
-            event.target.classList.add('active');
+            if (element) {
+                element.classList.add('active');
+            }
             currentTab = tabName;
             
             // Request data for the tab

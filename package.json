@@ -198,6 +198,12 @@
             }
         }
     },
+    "files": [
+        "out/**/*",
+        "media/**/*",
+        "README.md",
+        "CHANGELOG.md"
+    ],
     "scripts": {
         "vscode:prepublish": "npm run compile",
         "compile": "tsc -p ./",

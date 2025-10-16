@@ -248,20 +248,22 @@ export class SmartAlertingSystem {
     }
 
     private evaluateThresholdRule(rule: AlertRule, metrics: PerformanceMetrics): boolean {
-        if (!rule.threshold) return false;
+        if (rule.threshold === undefined || rule.threshold === null) return false;
 
         switch (rule.condition) {
             case 'average_latency > threshold':
                 return metrics.averageLatency > rule.threshold;
-            case 'performance_score < threshold':
+            case 'performance_score < threshold': {
                 // Calculate performance score where higher latency = worse performance
                 const performanceScore = metrics.averageLatency;
                 return performanceScore > rule.threshold; // Performance degrades when score exceeds threshold
-            case 'error_rate > threshold':
+            }
+            case 'error_rate > threshold': {
                 const computedErrorRate = metrics.errorRate || 0;
                 // Normalize threshold: if <= 1, treat as fraction and convert to percentage
                 const normalizedThreshold = rule.threshold <= 1 ? rule.threshold * 100 : rule.threshold;
                 return computedErrorRate > normalizedThreshold;
+            }
             default:
                 return false;
         }
@@ -271,13 +273,54 @@ export class SmartAlertingSystem {
         const anomalies = this.mlEngine.detectAnomalies();
         return anomalies.some(anomaly => {
             if (rule.condition.includes('error_rate') && anomaly.type === 'error_surge') {
+                // Check if there's already an active ML anomaly or cooldown for this type
+                if (this.hasActiveAnomalyFor('error_surge')) {
+                    return false; // Skip if equivalent anomaly is already active
+                }
                 return true;
             }
             if (rule.condition.includes('traffic') && anomaly.type === 'traffic_anomaly') {
+                // Check if there's already an active ML anomaly or cooldown for this type
+                if (this.hasActiveAnomalyFor('traffic_anomaly')) {
+                    return false; // Skip if equivalent anomaly is already active
+                }
                 return true;
             }
             return false;
         });
+    }
+
+    private hasActiveAnomalyFor(ruleType: string): boolean {
+        // Check current ML anomalies
+        const currentAnomalies = this.mlEngine.detectAnomalies();
+        const hasActiveMLAnomaly = currentAnomalies.some(anomaly => anomaly.type === ruleType);
+
+        if (hasActiveMLAnomaly) {
+            return true;
+        }
+
+        // Check for active alerts of this anomaly type
+        const hasActiveAlert = Array.from(this.alerts.values()).some(alert =>
+            alert.ruleId === 'anomaly-detection' &&
+            !alert.resolved &&
+            alert.data?.anomaly?.type === ruleType
+        );
+
+        if (hasActiveAlert) {
+            return true;
+        }
+
+        // Check for recent cooldown entries
+        const now = Date.now();
+        const cooldownPeriod = 5 * 60 * 1000; // 5 minutes cooldown
+
+        for (const [key, lastTime] of this.anomalyCooldowns.entries()) {
+            if (key.includes(ruleType) && (now - lastTime) < cooldownPeriod) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private evaluatePredictionRule(rule: AlertRule, metrics: PerformanceMetrics): boolean {
@@ -438,8 +481,18 @@ export class SmartAlertingSystem {
         switch (rule.id) {
             case 'high-latency':
                 return `Average latency is ${metrics.averageLatency.toFixed(2)}ms, exceeding threshold of ${rule.threshold}ms.`;
-            case 'error-rate-spike':
-                return `Error rate has spiked to ${metrics.errorEndpoints?.length || 0} endpoints with errors.`;
+            case 'error-rate-spike': {
+                const errorRate = metrics.errorRate ?? 0;
+                const errorCount = metrics.errorEndpoints?.length ?? 0;
+
+                if (errorRate > 0) {
+                    return `Error rate has spiked to ${errorRate.toFixed(1)}% (${errorCount} endpoints with errors).`;
+                } else if (errorCount > 0) {
+                    return `Error rate has spiked to ${errorCount} endpoints with errors.`;
+                } else {
+                    return `Error rate has spiked above threshold.`;
+                }
+            }
             case 'performance-degradation':
                 return `Performance score has dropped below ${rule.threshold}. Current average latency: ${metrics.averageLatency.toFixed(2)}ms.`;
             default:

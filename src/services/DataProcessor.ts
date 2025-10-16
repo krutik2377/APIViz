@@ -148,12 +148,34 @@ export class DataProcessor {
                 p99Latency: 0,
                 totalCalls: 0,
                 errorRate: 0,
-                lastUpdate: Date.now()
+                lastUpdate: Date.now(),
+                topEndpoints: [],
+                slowestEndpoints: [],
+                errorEndpoints: []
             };
         }
 
         const latencies = calls.map(call => call.latency).sort((a, b) => a - b);
         const errorCalls = calls.filter(call => call.statusCode && call.statusCode >= 400);
+
+        // Get endpoint stats and populate the missing fields
+        const endpointStats = this.getEndpointStats();
+
+        // Sort by total calls descending and take top 10
+        const topEndpoints = [...endpointStats]
+            .sort((a, b) => b.totalCalls - a.totalCalls)
+            .slice(0, 10);
+
+        // Sort by average latency descending and take top 10
+        const slowestEndpoints = [...endpointStats]
+            .sort((a, b) => b.averageLatency - a.averageLatency)
+            .slice(0, 10);
+
+        // Filter endpoints with errors and sort by error rate descending
+        const errorEndpoints = [...endpointStats]
+            .filter(endpoint => endpoint.errorRate > 0)
+            .sort((a, b) => b.errorRate - a.errorRate)
+            .slice(0, 10);
 
         return {
             averageLatency: latencies.reduce((sum, latency) => sum + latency, 0) / latencies.length,
@@ -163,7 +185,10 @@ export class DataProcessor {
             p99Latency: this.calculatePercentile(latencies, 99),
             totalCalls: calls.length,
             errorRate: (errorCalls.length / calls.length) * 100,
-            lastUpdate: Date.now()
+            lastUpdate: Date.now(),
+            topEndpoints,
+            slowestEndpoints,
+            errorEndpoints
         };
     }
 
