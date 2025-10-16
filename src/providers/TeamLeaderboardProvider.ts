@@ -317,7 +317,7 @@ export class TeamLeaderboardProvider implements vscode.TreeDataProvider<TeamTree
     private getChallengeScore(member: TeamMember, type: string): string {
         switch (type) {
             case 'speed':
-                return `${member.performanceScore.speed}ms avg`;
+                return `${member.performanceScore.speed}/100`;
             case 'reliability':
                 return `${member.performanceScore.reliability}% uptime`;
             case 'efficiency':
@@ -381,6 +381,12 @@ export class TeamLeaderboardProvider implements vscode.TreeDataProvider<TeamTree
         const now = new Date();
         const diff = timestamp - now.getTime();
 
+        // Handle past timestamps
+        if (diff <= 0) {
+            return 'Expired';
+        }
+
+        // Handle future timestamps
         if (diff < 86400000) { // Less than 1 day
             return `${Math.floor(diff / 3600000)}h remaining`;
         } else {

@@ -294,7 +294,7 @@ export class TeamService {
     }
 
     createChallenge(challenge: Omit<TeamChallenge, 'id' | 'leaderboard'>): string {
-        const id = `challenge-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        const id = `challenge-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
         const newChallenge: TeamChallenge = {
             ...challenge,
             id,
@@ -358,7 +358,7 @@ export class TeamService {
         participants.sort((a, b) => {
             switch (challenge.type) {
                 case 'speed':
-                    return a.performanceScore.speed - b.performanceScore.speed;
+                    return b.performanceScore.speed - a.performanceScore.speed;
                 case 'reliability':
                     return b.performanceScore.reliability - a.performanceScore.reliability;
                 case 'efficiency':
@@ -382,7 +382,7 @@ export class TeamService {
     }
 
     addTeamMember(member: Omit<TeamMember, 'id' | 'rank'>): string {
-        const id = `member-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        const id = `member-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
         const newMember: TeamMember = {
             ...member,
             id,
