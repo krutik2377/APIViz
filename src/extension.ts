@@ -10,6 +10,9 @@ import { ConfigurationManager } from './services/ConfigurationManager';
 import { CommandHandlers } from './commands';
 import { AIInsightsWebview } from './views/AIInsightsWebview';
 import { AdvancedVisualizations } from './views/AdvancedVisualizations';
+import { TeamService } from './services/TeamService';
+import { TeamLeaderboardProvider } from './providers/TeamLeaderboardProvider';
+import { SocialSharingWebview } from './views/SocialSharingWebview';
 
 let webSocketService: WebSocketService;
 let dataProcessor: DataProcessor;
@@ -22,6 +25,9 @@ let commandHandlers: CommandHandlers;
 let aiInsightsProvider: AIInsightsProvider;
 let aiInsightsWebview: AIInsightsWebview;
 let advancedVisualizations: AdvancedVisualizations;
+let teamService: TeamService;
+let teamLeaderboardProvider: TeamLeaderboardProvider;
+let socialSharingWebview: SocialSharingWebview;
 
 export function activate(context: vscode.ExtensionContext) {
     console.log('APIViz extension is now active!');
@@ -47,10 +53,16 @@ export function activate(context: vscode.ExtensionContext) {
     // Initialize advanced visualizations
     advancedVisualizations = new AdvancedVisualizations(dataProcessor);
 
+    // Initialize team services
+    teamService = new TeamService();
+    teamLeaderboardProvider = new TeamLeaderboardProvider(teamService);
+    socialSharingWebview = new SocialSharingWebview(teamService);
+
     // Register tree data providers
     vscode.window.registerTreeDataProvider('apiviz.latencyView', latencyProvider);
     vscode.window.registerTreeDataProvider('apiviz.endpointsView', endpointsProvider);
     vscode.window.registerTreeDataProvider('apiviz.aiInsightsView', aiInsightsProvider);
+    vscode.window.registerTreeDataProvider('apiviz.teamLeaderboardView', teamLeaderboardProvider);
 
     // Register commands
     const startMonitoringCommand = vscode.commands.registerCommand('apiviz.startMonitoring', async () => {
@@ -126,6 +138,10 @@ export function activate(context: vscode.ExtensionContext) {
         advancedVisualizations.createWebview(context);
     });
 
+    const openSocialSharingCommand = vscode.commands.registerCommand('apiviz.openSocialSharing', () => {
+        socialSharingWebview.createWebview(context);
+    });
+
     // Register all commands
     context.subscriptions.push(
         startMonitoringCommand,
@@ -134,7 +150,8 @@ export function activate(context: vscode.ExtensionContext) {
         openSettingsCommand,
         instrumentLineCommand,
         openAIInsightsCommand,
-        openAdvancedVizCommand
+        openAdvancedVizCommand,
+        openSocialSharingCommand
     );
 
     // Register additional command handlers

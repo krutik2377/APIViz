@@ -57,6 +57,11 @@
                 "command": "apiviz.openAdvancedViz",
                 "title": "Open Advanced Visualizations",
                 "category": "APIViz"
+            },
+            {
+                "command": "apiviz.openSocialSharing",
+                "title": "Open Social Sharing",
+                "category": "APIViz"
             }
         ],
         "views": {
@@ -99,6 +104,11 @@
                 {
                     "id": "apiviz.aiInsightsView",
                     "name": "AI Insights",
+                    "when": "apiviz.isMonitoring"
+                },
+                {
+                    "id": "apiviz.teamLeaderboardView",
+                    "name": "Team Leaderboard",
                     "when": "apiviz.isMonitoring"
                 }
             ],
