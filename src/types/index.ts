@@ -27,6 +27,7 @@ export interface LatencyDataPoint {
     timestamp: number;
     latency: number;
     endpoint: string;
+    errorRate?: number;
 }
 
 export interface WebSocketMessage {
@@ -99,6 +100,9 @@ export interface PerformanceMetrics {
     totalCalls: number;
     errorRate: number;
     lastUpdate: number;
+    topEndpoints?: EndpointStats[];
+    slowestEndpoints?: EndpointStats[];
+    errorEndpoints?: EndpointStats[];
 }
 
 export interface ChartDataPoint {

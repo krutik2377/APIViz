@@ -10,6 +10,7 @@ export class DataProcessor {
     private eventEmitter = new vscode.EventEmitter<void>();
 
     public readonly onDataChanged = this.eventEmitter.event;
+    public readonly onDidUpdateData = this.eventEmitter.event;
 
     constructor() {
         this.configurationManager = new ConfigurationManager();
@@ -63,15 +64,15 @@ export class DataProcessor {
         if (filter) {
             // Filter by endpoints
             if (filter.endpoints.length > 0) {
-                filteredCalls = filteredCalls.filter(call => 
+                filteredCalls = filteredCalls.filter(call =>
                     filter.endpoints.some(endpoint => call.endpoint.includes(endpoint))
                 );
             }
 
             // Filter by time range
             if (filter.timeRange) {
-                filteredCalls = filteredCalls.filter(call => 
-                    call.timestamp >= filter.timeRange!.start && 
+                filteredCalls = filteredCalls.filter(call =>
+                    call.timestamp >= filter.timeRange!.start &&
                     call.timestamp <= filter.timeRange!.end
                 );
             }
@@ -86,14 +87,14 @@ export class DataProcessor {
 
             // Filter by status codes
             if (filter.statusCodes.length > 0) {
-                filteredCalls = filteredCalls.filter(call => 
+                filteredCalls = filteredCalls.filter(call =>
                     call.statusCode && filter.statusCodes.includes(call.statusCode)
                 );
             }
 
             // Filter by HTTP methods
             if (filter.methods.length > 0) {
-                filteredCalls = filteredCalls.filter(call => 
+                filteredCalls = filteredCalls.filter(call =>
                     filter.methods.includes(call.method.toUpperCase())
                 );
             }
@@ -112,14 +113,14 @@ export class DataProcessor {
         if (filter) {
             // Apply same filters as API calls
             if (filter.endpoints.length > 0) {
-                filteredPoints = filteredPoints.filter(point => 
+                filteredPoints = filteredPoints.filter(point =>
                     filter.endpoints.some(endpoint => point.endpoint.includes(endpoint))
                 );
             }
 
             if (filter.timeRange) {
-                filteredPoints = filteredPoints.filter(point => 
-                    point.timestamp >= filter.timeRange!.start && 
+                filteredPoints = filteredPoints.filter(point =>
+                    point.timestamp >= filter.timeRange!.start &&
                     point.timestamp <= filter.timeRange!.end
                 );
             }
@@ -137,7 +138,7 @@ export class DataProcessor {
 
     getPerformanceMetrics(filter?: FilterOptions): PerformanceMetrics {
         const calls = this.getApiCalls(filter);
-        
+
         if (calls.length === 0) {
             return {
                 averageLatency: 0,
@@ -188,22 +189,22 @@ export class DataProcessor {
 
     private updateEndpointStatsForCall(apiCall: ApiCall): void {
         const existing = this.endpointStats.get(apiCall.endpoint);
-        
+
         if (existing) {
             // Update existing stats
             const totalCalls = existing.totalCalls + 1;
             const newAverage = ((existing.averageLatency * existing.totalCalls) + apiCall.latency) / totalCalls;
-            
+
             existing.totalCalls = totalCalls;
             existing.averageLatency = newAverage;
             existing.minLatency = Math.min(existing.minLatency, apiCall.latency);
             existing.maxLatency = Math.max(existing.maxLatency, apiCall.latency);
             existing.lastCall = apiCall.timestamp;
-            
+
             if (apiCall.statusCode && apiCall.statusCode >= 400) {
                 existing.errorRate = ((existing.errorRate / 100) * existing.totalCalls + 1) / totalCalls * 100;
             }
-            
+
             // Update status based on latency and error rate
             existing.status = this.calculateEndpointStatus(existing);
         } else {
@@ -220,7 +221,7 @@ export class DataProcessor {
                 lastCall: apiCall.timestamp,
                 status: 'healthy'
             };
-            
+
             this.endpointStats.set(apiCall.endpoint, newStats);
         }
     }
@@ -242,7 +243,7 @@ export class DataProcessor {
 
     private matchesEndpointFilters(url: string): boolean {
         const filters = this.configurationManager.getEndpointFilters();
-        
+
         if (filters.length === 0) {
             return true;
         }
@@ -259,11 +260,11 @@ export class DataProcessor {
 
     private trimData(): void {
         const maxDataPoints = this.configurationManager.getMaxDataPoints();
-        
+
         if (this.apiCalls.length > maxDataPoints) {
             this.apiCalls = this.apiCalls.slice(-maxDataPoints);
         }
-        
+
         if (this.latencyDataPoints.length > maxDataPoints) {
             this.latencyDataPoints = this.latencyDataPoints.slice(-maxDataPoints);
         }

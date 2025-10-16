@@ -64,6 +64,11 @@
                 "command": "apiviz.openSocialSharing",
                 "title": "Open Social Sharing",
                 "category": "APIViz"
+            },
+            {
+                "command": "apiviz.openPredictiveAnalytics",
+                "title": "Open Predictive Analytics",
+                "category": "APIViz"
             }
         ],
         "views": {
