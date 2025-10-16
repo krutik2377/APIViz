@@ -105,6 +105,7 @@ export class TeamLeaderboardProvider implements vscode.TreeDataProvider<TeamTree
                         label: 'Performance Metrics',
                         description: 'Detailed scores',
                         iconPath: new vscode.ThemeIcon('graph'),
+                        collapsibleState: vscode.TreeItemCollapsibleState.Collapsed,
                         children: [
                             {
                                 label: `Speed: ${member.performanceScore.speed}/100`,
@@ -127,6 +128,7 @@ export class TeamLeaderboardProvider implements vscode.TreeDataProvider<TeamTree
                         label: 'Statistics',
                         description: 'Activity data',
                         iconPath: new vscode.ThemeIcon('bar-chart'),
+                        collapsibleState: vscode.TreeItemCollapsibleState.Collapsed,
                         children: [
                             {
                                 label: `Total Calls: ${member.totalApiCalls.toLocaleString()}`,
@@ -149,6 +151,7 @@ export class TeamLeaderboardProvider implements vscode.TreeDataProvider<TeamTree
                         label: 'Actions',
                         description: 'Available actions',
                         iconPath: new vscode.ThemeIcon('tools'),
+                        collapsibleState: vscode.TreeItemCollapsibleState.Collapsed,
                         children: [
                             {
                                 label: 'Share Performance',
@@ -195,6 +198,7 @@ export class TeamLeaderboardProvider implements vscode.TreeDataProvider<TeamTree
                             label: 'Challenge Details',
                             description: 'Information',
                             iconPath: new vscode.ThemeIcon('info'),
+                            collapsibleState: vscode.TreeItemCollapsibleState.Collapsed,
                             children: [
                                 {
                                     label: `Target: ${challenge.target}${challenge.unit}`,
@@ -217,6 +221,7 @@ export class TeamLeaderboardProvider implements vscode.TreeDataProvider<TeamTree
                             label: 'Leaderboard',
                             description: 'Current standings',
                             iconPath: new vscode.ThemeIcon('leaderboard'),
+                            collapsibleState: vscode.TreeItemCollapsibleState.Collapsed,
                             children: challenge.leaderboard.map((member, index) => ({
                                 label: `${this.getRankIcon(index + 1)} ${member.name}`,
                                 description: this.getChallengeScore(member, challenge.type),
@@ -227,6 +232,7 @@ export class TeamLeaderboardProvider implements vscode.TreeDataProvider<TeamTree
                             label: 'Actions',
                             description: 'Available actions',
                             iconPath: new vscode.ThemeIcon('tools'),
+                            collapsibleState: vscode.TreeItemCollapsibleState.Collapsed,
                             children: [
                                 {
                                     label: 'Join Challenge',

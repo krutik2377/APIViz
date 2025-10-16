@@ -399,6 +399,16 @@ export class TeamService {
     removeTeamMember(id: string): boolean {
         if (this.teamMembers.has(id)) {
             this.teamMembers.delete(id);
+
+            // Remove member from all challenges and refresh leaderboards
+            this.challenges.forEach((challenge, challengeId) => {
+                const hadParticipant = challenge.participants.includes(id);
+                if (hadParticipant) {
+                    challenge.participants = challenge.participants.filter(memberId => memberId !== id);
+                    this.updateChallengeLeaderboard(challengeId);
+                }
+            });
+
             this.updateRanks();
             this.eventEmitter.fire();
             return true;
