@@ -252,10 +252,14 @@ export class SmartAlertingSystem {
             case 'average_latency > threshold':
                 return metrics.averageLatency > rule.threshold;
             case 'performance_score < threshold':
-                return metrics.averageLatency < rule.threshold; // Simplified for demo
+                // Calculate performance score where higher latency = worse performance
+                const performanceScore = metrics.averageLatency;
+                return performanceScore > rule.threshold; // Performance degrades when score exceeds threshold
             case 'error_rate > threshold':
-                const errorRate = metrics.errorEndpoints?.length || 0;
-                return errorRate > rule.threshold;
+                const computedErrorRate = metrics.errorRate || 0;
+                // Normalize threshold: if <= 1, treat as fraction and convert to percentage
+                const normalizedThreshold = rule.threshold <= 1 ? rule.threshold * 100 : rule.threshold;
+                return computedErrorRate > normalizedThreshold;
             default:
                 return false;
         }

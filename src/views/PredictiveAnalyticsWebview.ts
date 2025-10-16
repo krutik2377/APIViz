@@ -8,6 +8,7 @@ export class PredictiveAnalyticsWebview {
     private mlEngine: MLPredictiveEngine;
     private alertingSystem: SmartAlertingSystem;
     private dataProcessor: DataProcessor;
+    private lastIngestedTimestamp = 0;
 
     constructor(dataProcessor: DataProcessor) {
         this.dataProcessor = dataProcessor;
@@ -87,8 +88,11 @@ export class PredictiveAnalyticsWebview {
 
     private updateMLData(): void {
         const latencyData = this.dataProcessor.getLatencyDataPoints();
-        latencyData.forEach(dataPoint => {
+        const newPoints = latencyData.filter(dp => dp.timestamp > this.lastIngestedTimestamp);
+
+        newPoints.forEach(dataPoint => {
             this.mlEngine.addDataPoint(dataPoint);
+            this.lastIngestedTimestamp = Math.max(this.lastIngestedTimestamp, dataPoint.timestamp);
         });
 
         const metrics = this.dataProcessor.getPerformanceMetrics();
@@ -107,12 +111,16 @@ export class PredictiveAnalyticsWebview {
         if (!this.panel) return;
 
         const endpoints = this.dataProcessor.getEndpointStats().map(e => e.endpoint);
-        const predictions: PredictionResult[] = [];
+        const predictions: (PredictionResult & { endpoint: string })[] = [];
 
         endpoints.forEach(endpoint => {
-            predictions.push(this.mlEngine.predictLatency(endpoint, '1h'));
-            predictions.push(this.mlEngine.predictTraffic(endpoint, '1h'));
-            predictions.push(this.mlEngine.predictErrors(endpoint, '1h'));
+            const latencyPrediction = this.mlEngine.predictLatency(endpoint, '1h');
+            const trafficPrediction = this.mlEngine.predictTraffic(endpoint, '1h');
+            const errorPrediction = this.mlEngine.predictErrors(endpoint, '1h');
+
+            predictions.push({ ...latencyPrediction, endpoint });
+            predictions.push({ ...trafficPrediction, endpoint });
+            predictions.push({ ...errorPrediction, endpoint });
         });
 
         this.panel.webview.postMessage({
@@ -819,19 +827,19 @@ export class PredictiveAnalyticsWebview {
             let html = \`
                 <div class="stats-grid">
                     <div class="stat-card">
-                        <div class="stat-value">\${alertStats.total}</div>
+                        <div class="stat-value">\${alertStats.total || 0}</div>
                         <div class="stat-label">Total Alerts</div>
                     </div>
                     <div class="stat-card">
-                        <div class="stat-value">\${alertStats.active}</div>
+                        <div class="stat-value">\${alertStats.active || 0}</div>
                         <div class="stat-label">Active Alerts</div>
                     </div>
                     <div class="stat-card">
-                        <div class="stat-value">\${alertStats.critical}</div>
+                        <div class="stat-value">\${alertStats.bySeverity?.critical || 0}</div>
                         <div class="stat-label">Critical</div>
                     </div>
                     <div class="stat-card">
-                        <div class="stat-value">\${alertStats.rulesEnabled}</div>
+                        <div class="stat-value">\${alertStats.rulesEnabled || 0}</div>
                         <div class="stat-label">Rules Enabled</div>
                     </div>
                 </div>

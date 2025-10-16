@@ -34,6 +34,7 @@ let socialSharingWebview: SocialSharingWebview;
 let mlPredictiveEngine: MLPredictiveEngine;
 let smartAlertingSystem: SmartAlertingSystem;
 let predictiveAnalyticsWebview: PredictiveAnalyticsWebview;
+let lastProcessedTimestamp = 0;
 
 export function activate(context: vscode.ExtensionContext) {
     console.log('APIViz extension is now active!');
@@ -222,8 +223,10 @@ export function activate(context: vscode.ExtensionContext) {
     // Set up ML data processing
     dataProcessor.onDidUpdateData(() => {
         const latencyData = dataProcessor.getLatencyDataPoints();
-        latencyData.forEach(dataPoint => {
+        const newPoints = latencyData.filter(dp => dp.timestamp > lastProcessedTimestamp);
+        newPoints.forEach(dataPoint => {
             mlPredictiveEngine.addDataPoint(dataPoint);
+            lastProcessedTimestamp = Math.max(lastProcessedTimestamp, dataPoint.timestamp);
         });
 
         const metrics = dataProcessor.getPerformanceMetrics();
