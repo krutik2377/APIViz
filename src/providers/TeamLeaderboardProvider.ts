@@ -80,7 +80,7 @@ export class TeamLeaderboardProvider implements vscode.TreeDataProvider<TeamTree
                     iconPath: new vscode.ThemeIcon('trophy')
                 },
                 {
-                    label: `Team Rank: #${teamStats.teamRank}`,
+                    label: `Team Rank: ${teamStats.teamRank ? `#${teamStats.teamRank}` : 'Unranked'}`,
                     description: 'Global ranking',
                     iconPath: new vscode.ThemeIcon('medal')
                 }

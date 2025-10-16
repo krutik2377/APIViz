@@ -23,7 +23,9 @@
     "activationEvents": [
         "onCommand:apiviz.startMonitoring",
         "onCommand:apiviz.stopMonitoring",
-        "onView:apiviz.latencyView"
+        "onCommand:apiviz.openSocialSharing",
+        "onView:apiviz.latencyView",
+        "onView:apiviz.teamLeaderboardView"
     ],
     "main": "./out/extension.js",
     "contributes": {

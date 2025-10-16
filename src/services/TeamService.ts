@@ -33,11 +33,11 @@ export interface TeamChallenge {
 export interface TeamStats {
     totalMembers: number;
     averageScore: number;
-    topPerformer: TeamMember;
+    topPerformer: TeamMember | null;
     totalApiCalls: number;
     teamAchievements: Achievement[];
     activeChallenges: number;
-    teamRank: number;
+    teamRank: number | null;
 }
 
 export class TeamService {
@@ -215,8 +215,23 @@ export class TeamService {
     getTeamStats(): TeamStats {
         const members = this.getTeamMembers();
         const totalMembers = members.length;
+
+        // Handle empty team case
+        if (totalMembers === 0) {
+            return {
+                totalMembers: 0,
+                averageScore: 0,
+                topPerformer: null,
+                totalApiCalls: 0,
+                teamAchievements: [],
+                activeChallenges: 0,
+                teamRank: null
+            };
+        }
+
+        // Safe calculations for non-empty teams
         const averageScore = members.reduce((sum, member) => sum + member.performanceScore.overall, 0) / totalMembers;
-        const topPerformer = members[0];
+        const topPerformer = members[0]; // Safe since we know members.length > 0
         const totalApiCalls = members.reduce((sum, member) => sum + member.totalApiCalls, 0);
         const activeChallenges = Array.from(this.challenges.values()).filter(c => c.status === 'active').length;
 
