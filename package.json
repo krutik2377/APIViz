@@ -23,7 +23,9 @@
     "activationEvents": [
         "onCommand:apiviz.startMonitoring",
         "onCommand:apiviz.stopMonitoring",
-        "onView:apiviz.latencyView"
+        "onCommand:apiviz.openSocialSharing",
+        "onView:apiviz.latencyView",
+        "onView:apiviz.teamLeaderboardView"
     ],
     "main": "./out/extension.js",
     "contributes": {
@@ -56,6 +58,11 @@
             {
                 "command": "apiviz.openAdvancedViz",
                 "title": "Open Advanced Visualizations",
+                "category": "APIViz"
+            },
+            {
+                "command": "apiviz.openSocialSharing",
+                "title": "Open Social Sharing",
                 "category": "APIViz"
             }
         ],
@@ -99,6 +106,11 @@
                 {
                     "id": "apiviz.aiInsightsView",
                     "name": "AI Insights",
+                    "when": "apiviz.isMonitoring"
+                },
+                {
+                    "id": "apiviz.teamLeaderboardView",
+                    "name": "Team Leaderboard",
                     "when": "apiviz.isMonitoring"
                 }
             ],

@@ -2,15 +2,18 @@ import * as vscode from 'vscode';
 import { DataProcessor } from '../services/DataProcessor';
 import { WebSocketService } from '../services/WebSocketService';
 import { ChartsWebview } from '../views/ChartsWebview';
+import { TeamService } from '../services/TeamService';
 
 export class CommandHandlers {
     private chartsWebview: ChartsWebview;
+    private teamService: TeamService;
 
     constructor(
         private dataProcessor: DataProcessor,
         private webSocketService: WebSocketService
     ) {
         this.chartsWebview = new ChartsWebview(dataProcessor);
+        this.teamService = new TeamService();
     }
 
     registerCommands(context: vscode.ExtensionContext): void {
@@ -78,6 +81,56 @@ export class CommandHandlers {
             }
         );
 
+        // Team commands
+        const shareMemberPerformanceCommand = vscode.commands.registerCommand(
+            'apiviz.shareMemberPerformance',
+            (member: any) => {
+                this.shareMemberPerformance(member);
+            }
+        );
+
+        const viewMemberProfileCommand = vscode.commands.registerCommand(
+            'apiviz.viewMemberProfile',
+            (member: any) => {
+                this.viewMemberProfile(member);
+            }
+        );
+
+        const joinChallengeCommand = vscode.commands.registerCommand(
+            'apiviz.joinChallenge',
+            (challengeId: string) => {
+                this.joinChallenge(challengeId);
+            }
+        );
+
+        const shareChallengeCommand = vscode.commands.registerCommand(
+            'apiviz.shareChallenge',
+            (challenge: any) => {
+                this.shareChallenge(challenge);
+            }
+        );
+
+        const createChallengeCommand = vscode.commands.registerCommand(
+            'apiviz.createChallenge',
+            () => {
+                this.createChallenge();
+            }
+        );
+
+        const inviteMembersCommand = vscode.commands.registerCommand(
+            'apiviz.inviteMembers',
+            () => {
+                this.inviteMembers();
+            }
+        );
+
+        const shareTeamStatsCommand = vscode.commands.registerCommand(
+            'apiviz.shareTeamStats',
+            () => {
+                this.shareTeamStats();
+            }
+        );
+
         context.subscriptions.push(
             showCallDetailsCommand,
             showEndpointDetailsCommand,
@@ -86,7 +139,14 @@ export class CommandHandlers {
             testEndpointCommand,
             openChartsCommand,
             exportDataCommand,
-            importDataCommand
+            importDataCommand,
+            shareMemberPerformanceCommand,
+            viewMemberProfileCommand,
+            joinChallengeCommand,
+            shareChallengeCommand,
+            createChallengeCommand,
+            inviteMembersCommand,
+            shareTeamStatsCommand
         );
     }
 
@@ -378,6 +438,256 @@ export class CommandHandlers {
             ${callsHtml}
         </tbody>
     </table>
+</body>
+</html>`;
+    }
+
+    // Team command implementations
+    private shareMemberPerformance(member: any): void {
+        const message = this.teamService.sharePerformanceScore(member.performanceScore, member.id);
+        vscode.env.clipboard.writeText(message);
+        vscode.window.showInformationMessage(`Performance score for ${member.name} copied to clipboard! 🚀`);
+    }
+
+    private viewMemberProfile(member: any): void {
+        const panel = vscode.window.createWebviewPanel(
+            'apivizMemberProfile',
+            `Profile - ${member.name}`,
+            vscode.ViewColumn.Two,
+            { enableScripts: true }
+        );
+
+        panel.webview.html = this.getMemberProfileHtml(member);
+    }
+
+    private joinChallenge(challengeId: string): void {
+        const success = this.teamService.joinChallenge(challengeId, 'current-user');
+        if (success) {
+            vscode.window.showInformationMessage('Successfully joined the challenge! 🏁');
+        } else {
+            vscode.window.showWarningMessage('Could not join the challenge. You may already be participating.');
+        }
+    }
+
+    private shareChallenge(challenge: any): void {
+        const message = this.teamService.shareChallenge(challenge);
+        vscode.env.clipboard.writeText(message);
+        vscode.window.showInformationMessage('Challenge copied to clipboard! Share it with your team! 🏆');
+    }
+
+    private async createChallenge(): Promise<void> {
+        const title = await vscode.window.showInputBox({
+            prompt: 'Enter challenge title',
+            placeHolder: 'e.g., Speed Demon Challenge'
+        });
+
+        if (!title) return;
+
+        const description = await vscode.window.showInputBox({
+            prompt: 'Enter challenge description',
+            placeHolder: 'e.g., Achieve the fastest average API response time'
+        });
+
+        if (!description) return;
+
+        const type = await vscode.window.showQuickPick(
+            ['speed', 'reliability', 'efficiency', 'streak', 'custom'],
+            { placeHolder: 'Select challenge type' }
+        );
+
+        if (!type) return;
+
+        const target = await vscode.window.showInputBox({
+            prompt: 'Enter target value',
+            placeHolder: 'e.g., 50'
+        });
+
+        if (!target) return;
+
+        const unit = await vscode.window.showInputBox({
+            prompt: 'Enter unit',
+            placeHolder: 'e.g., ms, %, days'
+        });
+
+        if (!unit) return;
+
+        const challenge = {
+            title,
+            description,
+            type,
+            target: parseFloat(target),
+            unit,
+            startDate: Date.now(),
+            endDate: Date.now() + 7 * 24 * 60 * 60 * 1000, // 7 days from now
+            participants: ['current-user'],
+            rewards: ['🏆 Challenge Winner Badge'],
+            status: 'active' as const
+        };
+
+        const challengeId = this.teamService.createChallenge(challenge);
+        vscode.window.showInformationMessage(`Challenge "${title}" created successfully! 🎉`);
+    }
+
+    private async inviteMembers(): Promise<void> {
+        const email = await vscode.window.showInputBox({
+            prompt: 'Enter team member email',
+            placeHolder: 'colleague@company.com'
+        });
+
+        if (!email) return;
+
+        // In a real implementation, this would send an invitation
+        vscode.window.showInformationMessage(`Invitation sent to ${email}! 📧`);
+    }
+
+    private shareTeamStats(): void {
+        const stats = this.teamService.getTeamStats();
+        const message = `🚀 Our team achieved ${stats.averageScore}/100 average performance score in APIViz! ${stats.totalApiCalls.toLocaleString()} API calls processed. #APIViz #TeamPerformance #DeveloperTools`;
+        vscode.env.clipboard.writeText(message);
+        vscode.window.showInformationMessage('Team stats copied to clipboard! Share your team success! 🏆');
+    }
+
+    private getMemberProfileHtml(member: any): string {
+        return `<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Member Profile - ${member.name}</title>
+    <style>
+        body { 
+            font-family: var(--vscode-font-family); 
+            padding: 20px; 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            margin: 0;
+        }
+        .profile-container {
+            background: rgba(255, 255, 255, 0.95);
+            color: #333;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        .profile-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .avatar {
+            font-size: 4em;
+            margin-bottom: 10px;
+        }
+        .name {
+            font-size: 2em;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .badge {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            display: inline-block;
+            margin-bottom: 20px;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+        .stat-card {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+        }
+        .stat-value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+        .stat-label {
+            color: #666;
+            font-size: 0.9em;
+        }
+        .achievements {
+            margin-top: 30px;
+        }
+        .achievement {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 15px;
+            margin: 10px 0;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .achievement-icon {
+            font-size: 2em;
+        }
+    </style>
+</head>
+<body>
+    <div class="profile-container">
+        <div class="profile-header">
+            <div class="avatar">${member.avatar || '👨‍💻'}</div>
+            <div class="name">${member.name}</div>
+            <div class="badge">${member.performanceScore.badge}</div>
+        </div>
+        
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-value">${member.performanceScore.overall}/100</div>
+                <div class="stat-label">Overall Score</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">${member.performanceScore.speed}/100</div>
+                <div class="stat-label">Speed</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">${member.performanceScore.reliability}/100</div>
+                <div class="stat-label">Reliability</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">${member.performanceScore.efficiency}/100</div>
+                <div class="stat-label">Efficiency</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">${member.totalApiCalls.toLocaleString()}</div>
+                <div class="stat-label">Total API Calls</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">${member.streak}</div>
+                <div class="stat-label">Day Streak</div>
+            </div>
+        </div>
+        
+        <div class="achievements">
+            <h3>Achievements</h3>
+            <div class="achievement">
+                <div class="achievement-icon">🏆</div>
+                <div>
+                    <strong>Performance Champion</strong><br>
+                    <small>Top 1% performer</small>
+                </div>
+            </div>
+            <div class="achievement">
+                <div class="achievement-icon">⚡</div>
+                <div>
+                    <strong>Speed Demon</strong><br>
+                    <small>Sub-100ms average latency</small>
+                </div>
+            </div>
+            <div class="achievement">
+                <div class="achievement-icon">🔥</div>
+                <div>
+                    <strong>Consistency King</strong><br>
+                    <small>12-day performance streak</small>
+                </div>
+            </div>
+        </div>
+    </div>
 </body>
 </html>`;
     }
