@@ -325,9 +325,9 @@ export class TeamLeaderboardProvider implements vscode.TreeDataProvider<TeamTree
             case 'speed':
                 return `${member.performanceScore.speed}/100`;
             case 'reliability':
-                return `${member.performanceScore.reliability}% uptime`;
+                return `${member.performanceScore.reliability}/100`;
             case 'efficiency':
-                return `${member.performanceScore.efficiency}% efficiency`;
+                return `${member.performanceScore.efficiency}/100`;
             case 'streak':
                 return `${member.streak} days`;
             default:
