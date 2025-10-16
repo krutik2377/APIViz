@@ -13,6 +13,9 @@ import { AdvancedVisualizations } from './views/AdvancedVisualizations';
 import { TeamService } from './services/TeamService';
 import { TeamLeaderboardProvider } from './providers/TeamLeaderboardProvider';
 import { SocialSharingWebview } from './views/SocialSharingWebview';
+import { MLPredictiveEngine } from './services/MLPredictiveEngine';
+import { SmartAlertingSystem } from './services/SmartAlertingSystem';
+import { PredictiveAnalyticsWebview } from './views/PredictiveAnalyticsWebview';
 
 let webSocketService: WebSocketService;
 let dataProcessor: DataProcessor;
@@ -28,6 +31,10 @@ let advancedVisualizations: AdvancedVisualizations;
 let teamService: TeamService;
 let teamLeaderboardProvider: TeamLeaderboardProvider;
 let socialSharingWebview: SocialSharingWebview;
+let mlPredictiveEngine: MLPredictiveEngine;
+let smartAlertingSystem: SmartAlertingSystem;
+let predictiveAnalyticsWebview: PredictiveAnalyticsWebview;
+let lastProcessedTimestamp = 0;
 
 export function activate(context: vscode.ExtensionContext) {
     console.log('APIViz extension is now active!');
@@ -57,6 +64,11 @@ export function activate(context: vscode.ExtensionContext) {
     teamService = new TeamService();
     teamLeaderboardProvider = new TeamLeaderboardProvider(teamService);
     socialSharingWebview = new SocialSharingWebview(teamService);
+
+    // Initialize ML and predictive analytics
+    mlPredictiveEngine = new MLPredictiveEngine();
+    smartAlertingSystem = new SmartAlertingSystem(mlPredictiveEngine);
+    predictiveAnalyticsWebview = new PredictiveAnalyticsWebview(dataProcessor);
 
     // Register tree data providers
     vscode.window.registerTreeDataProvider('apiviz.latencyView', latencyProvider);
@@ -142,6 +154,10 @@ export function activate(context: vscode.ExtensionContext) {
         socialSharingWebview.createWebview(context);
     });
 
+    const openPredictiveAnalyticsCommand = vscode.commands.registerCommand('apiviz.openPredictiveAnalytics', () => {
+        predictiveAnalyticsWebview.createWebview(context);
+    });
+
     // Register all commands
     context.subscriptions.push(
         startMonitoringCommand,
@@ -151,7 +167,8 @@ export function activate(context: vscode.ExtensionContext) {
         instrumentLineCommand,
         openAIInsightsCommand,
         openAdvancedVizCommand,
-        openSocialSharingCommand
+        openSocialSharingCommand,
+        openPredictiveAnalyticsCommand
     );
 
     // Register additional command handlers
@@ -202,6 +219,19 @@ export function activate(context: vscode.ExtensionContext) {
     });
 
     context.subscriptions.push(documentChangeListener);
+
+    // Set up ML data processing
+    dataProcessor.onDidUpdateData(() => {
+        const latencyData = dataProcessor.getLatencyDataPoints();
+        const newPoints = latencyData.filter(dp => dp.timestamp > lastProcessedTimestamp);
+        newPoints.forEach(dataPoint => {
+            mlPredictiveEngine.addDataPoint(dataPoint);
+            lastProcessedTimestamp = Math.max(lastProcessedTimestamp, dataPoint.timestamp);
+        });
+
+        const metrics = dataProcessor.getPerformanceMetrics();
+        smartAlertingSystem.processMetrics(metrics);
+    });
 }
 
 export function deactivate() {

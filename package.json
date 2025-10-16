@@ -24,6 +24,7 @@
         "onCommand:apiviz.startMonitoring",
         "onCommand:apiviz.stopMonitoring",
         "onCommand:apiviz.openSocialSharing",
+        "onCommand:apiviz.openPredictiveAnalytics",
         "onView:apiviz.latencyView",
         "onView:apiviz.teamLeaderboardView"
     ],
@@ -63,6 +64,11 @@
             {
                 "command": "apiviz.openSocialSharing",
                 "title": "Open Social Sharing",
+                "category": "APIViz"
+            },
+            {
+                "command": "apiviz.openPredictiveAnalytics",
+                "title": "Open Predictive Analytics",
                 "category": "APIViz"
             }
         ],
@@ -193,6 +199,12 @@
             }
         }
     },
+    "files": [
+        "out/**/*",
+        "media/**/*",
+        "README.md",
+        "CHANGELOG.md"
+    ],
     "scripts": {
         "vscode:prepublish": "npm run compile",
         "compile": "tsc -p ./",
