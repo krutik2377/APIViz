@@ -24,6 +24,7 @@
         "onCommand:apiviz.startMonitoring",
         "onCommand:apiviz.stopMonitoring",
         "onCommand:apiviz.openSocialSharing",
+        "onCommand:apiviz.openPredictiveAnalytics",
         "onView:apiviz.latencyView",
         "onView:apiviz.teamLeaderboardView"
     ],

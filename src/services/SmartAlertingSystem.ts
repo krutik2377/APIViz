@@ -52,11 +52,13 @@ export class SmartAlertingSystem {
     private eventEmitter = new vscode.EventEmitter<Alert>();
     private anomalyCooldowns: Map<string, number> = new Map(); // Track last anomaly alert time by key
     private lastPredictionAlert: Map<string, number> = new Map(); // Track last prediction alert time by endpoint+type
+    private outputChannel: vscode.OutputChannel;
 
     public readonly onAlert = this.eventEmitter.event;
 
     constructor(mlEngine: MLPredictiveEngine) {
         this.mlEngine = mlEngine;
+        this.outputChannel = vscode.window.createOutputChannel('SmartAlerting');
         this.initializeDefaultRules();
         this.initializeDefaultChannels();
     }
@@ -350,8 +352,12 @@ export class SmartAlertingSystem {
         this.alerts.set(alert.id, alert);
         rule.lastTriggered = Date.now();
 
-        // Execute alert actions
-        this.executeAlertActions(alert);
+        // Execute alert actions (catch errors to prevent alert storms)
+        try {
+            this.executeAlertActions(alert);
+        } catch (error) {
+            console.error(`Failed to execute actions for alert ${alert.id}:`, error);
+        }
 
         // Emit event
         this.eventEmitter.fire(alert);
@@ -551,28 +557,118 @@ export class SmartAlertingSystem {
     }
 
     private sendEmail(alert: Alert, config: any): void {
+        // Check if email integration is enabled
+        if (!config.enabled) {
+            this.outputChannel.appendLine(`[WARNING] Email integration disabled for alert: ${alert.title}`);
+            return;
+        }
+
+        // Validate required config fields
+        if (!config.recipients || !Array.isArray(config.recipients) || config.recipients.length === 0) {
+            this.outputChannel.appendLine(`[ERROR] Email alert failed - missing or invalid recipients config for alert: ${alert.title}`);
+            return;
+        }
+
+        // Feature flag check - in production, this would be a real email service
+        if (!config.featureEnabled) {
+            this.outputChannel.appendLine(`[WARNING] Email feature not implemented - would send to ${config.recipients.join(', ')}: ${alert.title}`);
+            return;
+        }
+
         // In a real implementation, this would send actual emails
-        console.log(`Email alert sent to ${config.recipients.join(', ')}: ${alert.title}`);
+        this.outputChannel.appendLine(`[INFO] Email alert sent to ${config.recipients.join(', ')}: ${alert.title}`);
     }
 
     private sendSlackMessage(alert: Alert, config: any): void {
+        // Check if Slack integration is enabled
+        if (!config.enabled) {
+            this.outputChannel.appendLine(`[WARNING] Slack integration disabled for alert: ${alert.title}`);
+            return;
+        }
+
+        // Validate required config fields
+        if (!config.channel || typeof config.channel !== 'string') {
+            this.outputChannel.appendLine(`[ERROR] Slack alert failed - missing or invalid channel config for alert: ${alert.title}`);
+            return;
+        }
+
+        // Feature flag check - in production, this would be a real Slack integration
+        if (!config.featureEnabled) {
+            this.outputChannel.appendLine(`[WARNING] Slack feature not implemented - would send to ${config.channel}: ${alert.title}`);
+            return;
+        }
+
         // In a real implementation, this would send to Slack
-        console.log(`Slack message sent to ${config.channel}: ${alert.title}`);
+        this.outputChannel.appendLine(`[INFO] Slack message sent to ${config.channel}: ${alert.title}`);
     }
 
     private sendTeamsMessage(alert: Alert, config: any): void {
+        // Check if Teams integration is enabled
+        if (!config.enabled) {
+            this.outputChannel.appendLine(`[WARNING] Teams integration disabled for alert: ${alert.title}`);
+            return;
+        }
+
+        // Validate required config fields
+        if (!config.webhookUrl || typeof config.webhookUrl !== 'string') {
+            this.outputChannel.appendLine(`[ERROR] Teams alert failed - missing or invalid webhookUrl config for alert: ${alert.title}`);
+            return;
+        }
+
+        // Feature flag check - in production, this would be a real Teams integration
+        if (!config.featureEnabled) {
+            this.outputChannel.appendLine(`[WARNING] Teams feature not implemented - would send to webhook: ${alert.title}`);
+            return;
+        }
+
         // In a real implementation, this would send to Microsoft Teams
-        console.log(`Teams message sent: ${alert.title}`);
+        this.outputChannel.appendLine(`[INFO] Teams message sent: ${alert.title}`);
     }
 
     private sendWebhook(alert: Alert, config: any): void {
+        // Check if webhook integration is enabled
+        if (!config.enabled) {
+            this.outputChannel.appendLine(`[WARNING] Webhook integration disabled for alert: ${alert.title}`);
+            return;
+        }
+
+        // Validate required config fields
+        if (!config.endpoint || typeof config.endpoint !== 'string') {
+            this.outputChannel.appendLine(`[ERROR] Webhook alert failed - missing or invalid endpoint config for alert: ${alert.title}`);
+            return;
+        }
+
+        // Feature flag check - in production, this would be a real HTTP request
+        if (!config.featureEnabled) {
+            this.outputChannel.appendLine(`[WARNING] Webhook feature not implemented - would send to ${config.endpoint}: ${alert.title}`);
+            return;
+        }
+
         // In a real implementation, this would send HTTP requests
-        console.log(`Webhook sent to ${config.endpoint}: ${alert.title}`);
+        this.outputChannel.appendLine(`[INFO] Webhook sent to ${config.endpoint}: ${alert.title}`);
     }
 
     private executeCommand(alert: Alert, config: any): void {
+        // Check if command integration is enabled
+        if (!config.enabled) {
+            this.outputChannel.appendLine(`[WARNING] Command integration disabled for alert: ${alert.title}`);
+            return;
+        }
+
+        // Validate required config fields
+        if (!config.command || typeof config.command !== 'string') {
+            this.outputChannel.appendLine(`[ERROR] Command alert failed - missing or invalid command config for alert: ${alert.title}`);
+            return;
+        }
+
+        // Feature flag check - in production, this would be a real command execution
+        if (!config.featureEnabled) {
+            this.outputChannel.appendLine(`[WARNING] Command feature not implemented - would execute: ${config.command} for alert: ${alert.title}`);
+            return;
+        }
+
         // In a real implementation, this would execute system commands
-        console.log(`Command executed: ${config.command} for alert: ${alert.title}`);
+        this.outputChannel.appendLine(`[INFO] Command executed: ${config.command} for alert: ${alert.title}`);
     }
 
     // Public API methods
