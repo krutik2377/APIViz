@@ -50,6 +50,8 @@ export class SmartAlertingSystem {
     private alertChannels: Map<string, AlertChannel> = new Map();
     private mlEngine: MLPredictiveEngine;
     private eventEmitter = new vscode.EventEmitter<Alert>();
+    private anomalyCooldowns: Map<string, number> = new Map(); // Track last anomaly alert time by key
+    private lastPredictionAlert: Map<string, number> = new Map(); // Track last prediction alert time by endpoint+type
 
     public readonly onAlert = this.eventEmitter.event;
 
@@ -223,7 +225,7 @@ export class SmartAlertingSystem {
         // Check for anomalies
         const anomalies = this.mlEngine.detectAnomalies();
         anomalies.forEach(anomaly => {
-            this.handleAnomaly(anomaly);
+            this.handleAnomalyWithCooldown(anomaly);
         });
 
         // Check predictions
@@ -312,6 +314,36 @@ export class SmartAlertingSystem {
         this.eventEmitter.fire(alert);
     }
 
+    private handleAnomalyWithCooldown(anomaly: AnomalyDetection): void {
+        // Create a unique key for this anomaly based on type and affected endpoints
+        const anomalyKey = `${anomaly.type}-${anomaly.affectedEndpoints?.sort().join(',') || 'global'}`;
+        const now = Date.now();
+        const cooldownPeriod = 5 * 60 * 1000; // 5 minutes cooldown
+
+        // Check if we've already alerted for this anomaly recently
+        const lastAlertTime = this.anomalyCooldowns.get(anomalyKey);
+        if (lastAlertTime && (now - lastAlertTime) < cooldownPeriod) {
+            return; // Skip this anomaly due to cooldown
+        }
+
+        // Check if there's already an active alert for this anomaly
+        const existingAlert = Array.from(this.alerts.values()).find(alert =>
+            alert.ruleId === 'anomaly-detection' &&
+            !alert.resolved &&
+            alert.data?.anomaly?.type === anomaly.type &&
+            JSON.stringify(alert.data?.anomaly?.affectedEndpoints?.sort()) ===
+            JSON.stringify(anomaly.affectedEndpoints?.sort())
+        );
+
+        if (existingAlert) {
+            return; // Skip if there's already an active alert for this anomaly
+        }
+
+        // Update cooldown and create new alert
+        this.anomalyCooldowns.set(anomalyKey, now);
+        this.handleAnomaly(anomaly);
+    }
+
     private handleAnomaly(anomaly: AnomalyDetection): void {
         const alert: Alert = {
             id: `anomaly-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
@@ -344,29 +376,62 @@ export class SmartAlertingSystem {
             const prediction = this.mlEngine.predictLatency(endpoint, '1h');
 
             if (prediction.riskLevel > 70) {
-                const alert: Alert = {
-                    id: `prediction-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-                    ruleId: 'latency-prediction',
-                    title: `High Risk Prediction: ${endpoint}`,
-                    message: `ML predicts ${prediction.trend} latency trend with ${prediction.confidence * 100}% confidence. Risk level: ${prediction.riskLevel}%`,
-                    severity: prediction.impact,
-                    timestamp: Date.now(),
-                    resolved: false,
-                    data: { prediction, endpoint },
-                    actions: [
-                        {
-                            type: 'notification',
-                            config: { sound: false, persistent: false },
-                            enabled: true
-                        }
-                    ]
-                };
-
-                this.alerts.set(alert.id, alert);
-                this.executeAlertActions(alert);
-                this.eventEmitter.fire(alert);
+                this.handlePredictionAlert(endpoint, prediction);
+            } else {
+                // Clear cooldown if risk level drops below threshold
+                const predictionKey = `${endpoint}-latency`;
+                this.lastPredictionAlert.delete(predictionKey);
             }
         });
+    }
+
+    private handlePredictionAlert(endpoint: string, prediction: any): void {
+        const predictionKey = `${endpoint}-${prediction.type}`;
+        const now = Date.now();
+        const cooldownPeriod = 15 * 60 * 1000; // 15 minutes cooldown
+
+        // Check if we've already alerted for this prediction recently
+        const lastAlertTime = this.lastPredictionAlert.get(predictionKey);
+        if (lastAlertTime && (now - lastAlertTime) < cooldownPeriod) {
+            return; // Skip this prediction due to cooldown
+        }
+
+        // Check if there's already an active alert for this prediction
+        const existingAlert = Array.from(this.alerts.values()).find(alert =>
+            alert.ruleId === 'latency-prediction' &&
+            !alert.resolved &&
+            alert.data?.endpoint === endpoint &&
+            alert.data?.prediction?.type === prediction.type
+        );
+
+        if (existingAlert) {
+            return; // Skip if there's already an active alert for this prediction
+        }
+
+        // Update cooldown and create new alert
+        this.lastPredictionAlert.set(predictionKey, now);
+
+        const alert: Alert = {
+            id: `prediction-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+            ruleId: 'latency-prediction',
+            title: `High Risk Prediction: ${endpoint}`,
+            message: `ML predicts ${prediction.trend} latency trend with ${prediction.confidence * 100}% confidence. Risk level: ${prediction.riskLevel}%`,
+            severity: prediction.impact,
+            timestamp: Date.now(),
+            resolved: false,
+            data: { prediction, endpoint },
+            actions: [
+                {
+                    type: 'notification',
+                    config: { sound: false, persistent: false },
+                    enabled: true
+                }
+            ]
+        };
+
+        this.alerts.set(alert.id, alert);
+        this.executeAlertActions(alert);
+        this.eventEmitter.fire(alert);
     }
 
     private generateAlertMessage(rule: AlertRule, metrics: PerformanceMetrics): string {
@@ -501,7 +566,26 @@ export class SmartAlertingSystem {
         alert.resolved = true;
         alert.resolvedAt = Date.now();
         this.alerts.set(alertId, alert);
+
+        // Clean up cooldown tracking when alert is resolved
+        this.cleanupCooldownTracking(alert);
+
         return true;
+    }
+
+    private cleanupCooldownTracking(alert: Alert): void {
+        // Clean up prediction alert cooldowns
+        if (alert.ruleId === 'latency-prediction' && alert.data?.endpoint && alert.data?.prediction?.type) {
+            const predictionKey = `${alert.data.endpoint}-${alert.data.prediction.type}`;
+            this.lastPredictionAlert.delete(predictionKey);
+        }
+
+        // Clean up anomaly alert cooldowns
+        if (alert.ruleId === 'anomaly-detection' && alert.data?.anomaly) {
+            const anomaly = alert.data.anomaly;
+            const anomalyKey = `${anomaly.type}-${anomaly.affectedEndpoints?.sort().join(',') || 'global'}`;
+            this.anomalyCooldowns.delete(anomalyKey);
+        }
     }
 
     public createAlertChannel(channel: Omit<AlertChannel, 'id'>): string {

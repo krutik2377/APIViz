@@ -759,6 +759,9 @@ export class PredictiveAnalyticsWebview {
             
             const groupedPredictions = groupPredictionsByEndpoint(predictions);
             
+            // Populate forecast endpoint select
+            populateForecastEndpointSelect(groupedPredictions);
+            
             let html = '<div class="prediction-grid">';
             
             Object.keys(groupedPredictions).forEach(endpoint => {
@@ -786,6 +789,46 @@ export class PredictiveAnalyticsWebview {
             
             html += '</div>';
             content.innerHTML = html;
+        }
+        
+        function populateForecastEndpointSelect(groupedPredictions) {
+            const selectElement = document.getElementById('forecast-endpoint');
+            if (!selectElement) return;
+            
+            // Store the currently selected value to restore it if possible
+            const currentSelection = selectElement.value;
+            
+            // Clear current options
+            selectElement.innerHTML = '';
+            
+            // Add placeholder option
+            const placeholderOption = document.createElement('option');
+            placeholderOption.value = '';
+            placeholderOption.textContent = 'Select an endpoint...';
+            placeholderOption.disabled = true;
+            placeholderOption.selected = true;
+            selectElement.appendChild(placeholderOption);
+            
+            // Get available endpoints and sort them
+            const endpoints = Object.keys(groupedPredictions).sort();
+            
+            // Add endpoint options
+            endpoints.forEach(endpoint => {
+                const option = document.createElement('option');
+                option.value = endpoint;
+                option.textContent = endpoint;
+                selectElement.appendChild(option);
+            });
+            
+            // Restore previous selection if it still exists, otherwise select first endpoint
+            if (currentSelection && endpoints.includes(currentSelection)) {
+                selectElement.value = currentSelection;
+            } else if (endpoints.length > 0) {
+                selectElement.value = endpoints[0];
+            }
+            
+            // Enable the select element
+            selectElement.disabled = false;
         }
         
         function updateAnomalies(anomalies) {
