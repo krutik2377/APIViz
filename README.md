@@ -1,5 +1,8 @@
 # APIViz - Real-time API Latency Monitor
 
+<img width="1918" height="1043" alt="image" src="https://github.com/user-attachments/assets/232ae5f8-5ccf-4626-bc3e-0adfb80125ab" />
+
+
 🚀 **Visualize API call latency in real-time directly in your VSCode editor**
 
 APIViz is a powerful VSCode extension that provides real-time monitoring and visualization of API call performance. It hooks into your running applications to capture HTTP request latency and displays it through beautiful charts, inline decorations, and status indicators.
