@@ -20,10 +20,7 @@ export class InlineDecorator {
                 color: new vscode.ThemeColor('editorInfo.foreground'),
                 backgroundColor: new vscode.ThemeColor('editorInfo.background'),
                 border: '1px solid',
-                borderColor: new vscode.ThemeColor('editorInfo.border'),
-                borderRadius: '3px',
-                padding: '2px 6px',
-                fontSize: '0.8em'
+                borderColor: new vscode.ThemeColor('editorInfo.border')
             },
             rangeBehavior: vscode.DecorationRangeBehavior.ClosedClosed
         });
@@ -176,11 +173,7 @@ export class InlineDecorator {
                     contentText: ` ${latencyText}`,
                     color: statusColor,
                     backgroundColor: 'rgba(0, 0, 0, 0.1)',
-                    border: '1px solid rgba(0, 0, 0, 0.2)',
-                    borderRadius: '3px',
-                    padding: '1px 4px',
-                    fontSize: '0.75em',
-                    fontWeight: '500'
+                    border: '1px solid rgba(0, 0, 0, 0.2)'
                 }
             },
             hoverMessage: new vscode.MarkdownString()

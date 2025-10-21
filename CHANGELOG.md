@@ -39,14 +39,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Tree view providers for data display
 - Webview panels for detailed visualizations
 
-## [0.1.0] - 2024-01-XX
+## [0.1.0] - 2024-10-21
 
-### Added
-- Initial project structure
-- Core extension functionality
-- Agent server implementation
-- Basic instrumentation
-- Documentation and examples
+### Initial Release
+
+#### Core Features
+- ✅ Real-time API latency monitoring
+- ✅ Activity Bar integration with custom icon
+- ✅ Tree view providers for live data display
+- ✅ Command palette integration (8 commands)
+- ✅ Settings configuration panel
+- ✅ Status bar manager
+- ✅ Inline code decorations
+
+#### UI Components
+- **Live Latency View**: Real-time API performance tracking
+- **Endpoints View**: Monitored endpoints with statistics
+- **AI Insights View**: Performance recommendations
+- **Team Leaderboard View**: Team collaboration features
+
+#### Webview Panels
+- AI Insights panel with detailed analysis
+- Advanced Visualizations with charts and graphs
+- Predictive Analytics with ML-based predictions
+- Social Sharing for team collaboration
+
+#### Services & Architecture
+- WebSocket service for real-time data streaming
+- Data processor for metrics calculation
+- Configuration manager for settings
+- ML Predictive Engine for performance analysis
+- Smart Alerting System for notifications
+
+#### Developer Experience
+- TypeScript-based development
+- Comprehensive documentation
+- Example implementations
+- Development and production build scripts
+- VSIX packaging support
 
 ---
 

@@ -1,5 +1,6 @@
 # APIViz - Real-time API Latency Monitor
 
+<<<<<<< Updated upstream
 <img width="1918" height="1043" alt="image" src="https://github.com/user-attachments/assets/232ae5f8-5ccf-4626-bc3e-0adfb80125ab" />
 <img width="1915" height="1078" alt="image" src="https://github.com/user-attachments/assets/97a59a56-45e7-4b4a-b712-b578aab2a499" />
 <img width="1913" height="1079" alt="image" src="https://github.com/user-attachments/assets/ac1d8589-62c4-4b90-8c62-c0f41153d2f5" />
@@ -9,8 +10,14 @@
 
 
 🚀 **Visualize API call latency in real-time directly in your VSCode editor**
+=======
+[![Version](https://img.shields.io/badge/version-0.1.0-blue.svg)](https://marketplace.visualstudio.com/items?itemName=apiviz.apiviz)
+[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+>>>>>>> Stashed changes
 
-APIViz is a powerful VSCode extension that provides real-time monitoring and visualization of API call performance. It hooks into your running applications to capture HTTP request latency and displays it through beautiful charts, inline decorations, and status indicators.
+**Monitor and visualize API call latency in real-time directly in your VS Code editor**
+
+APIViz is a powerful VS Code extension that provides real-time monitoring and visualization of API call performance. It captures HTTP request latency and displays it through beautiful charts, inline decorations, and actionable insights - helping you identify and fix performance bottlenecks faster.
 
 ## ✨ Features
 
@@ -31,33 +38,48 @@ APIViz is a powerful VSCode extension that provides real-time monitoring and vis
 └─────────────────┘                 └─────────────────┘                └─────────────────┘
 ```
 
-## 🚀 Quick Start
+## 🚀 Getting Started
 
-### 1. Install the Extension
+### Installation
 
-Install APIViz from the VSCode marketplace or build from source.
+1. Open VS Code
+2. Go to Extensions (`Ctrl+Shift+X` or `Cmd+Shift+X`)
+3. Search for "APIViz"
+4. Click **Install**
 
-### 2. Start the Agent
+Or install from `.vsix` file:
+- Open Command Palette (`Ctrl+Shift+P`)
+- Run `Extensions: Install from VSIX...`
+- Select the `apiviz-0.1.0.vsix` file
 
-The extension will automatically start a local agent server on port 3001.
+### Basic Usage
 
-### 3. Instrument Your Code
+1. **Open Command Palette** (`Ctrl+Shift+P` or `Cmd+Shift+P`)
+2. **Run** `APIViz: Start API Monitoring`
+3. **Click** the APIViz icon in the Activity Bar (left sidebar)
+4. **Monitor** your API performance in real-time
 
-Add the APIViz instrumentation to your application:
+### Configuration
 
-```javascript
-// For Node.js applications
-const { instrumentHttp } = require('apiviz-agent');
-instrumentHttp();
+Configure APIViz through VS Code settings (`Ctrl+,`):
 
-// For browser applications
-import { instrumentFetch } from 'apiviz-agent/browser';
-instrumentFetch();
-```
+- Search for "APIViz"
+- Customize agent port, sampling rate, filters, and more
 
-### 4. Start Monitoring
+## 📖 Commands
 
-Click the "Start API Monitoring" button in the APIViz sidebar or use the command palette.
+Access all commands via Command Palette (`Ctrl+Shift+P`):
+
+| Command | Description |
+|---------|-------------|
+| `APIViz: Start API Monitoring` | Begin monitoring API calls |
+| `APIViz: Stop API Monitoring` | Stop monitoring |
+| `APIViz: Clear Data` | Clear all latency data |
+| `APIViz: Open AI Insights` | View AI-powered performance insights |
+| `APIViz: Open Advanced Visualizations` | Open charts and graphs |
+| `APIViz: Open Predictive Analytics` | View ML-based predictions |
+| `APIViz: Open Social Sharing` | Share performance data with team |
+| `APIViz: Open Settings` | Open APIViz settings |
 
 ## 📁 Project Structure
 

@@ -514,7 +514,7 @@ export class CommandHandlers {
         const challenge = {
             title,
             description,
-            type,
+            type: type as 'speed' | 'reliability' | 'efficiency' | 'streak' | 'custom',
             target: parseFloat(target),
             unit,
             startDate: Date.now(),

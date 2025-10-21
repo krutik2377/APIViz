@@ -4,6 +4,10 @@
     "description": "Visualize API call latency in real-time directly in your VSCode editor",
     "version": "0.1.0",
     "publisher": "apiviz",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/your-username/apiviz.git"
+    },
     "engines": {
         "vscode": "^1.74.0"
     },
@@ -21,15 +25,17 @@
         "visualization"
     ],
     "activationEvents": [
-        "onCommand:apiviz.startMonitoring",
-        "onCommand:apiviz.stopMonitoring",
-        "onCommand:apiviz.openSocialSharing",
-        "onCommand:apiviz.openPredictiveAnalytics",
-        "onView:apiviz.latencyView",
-        "onView:apiviz.teamLeaderboardView"
+        "onStartupFinished"
     ],
     "main": "./out/extension.js",
     "contributes": {
+        "chatParticipants": [
+            {
+                "id": "claude-code",
+                "name": "claude-code",
+                "when": "true"
+            }
+        ],
         "commands": [
             {
                 "command": "apiviz.startMonitoring",
@@ -70,33 +76,13 @@
                 "command": "apiviz.openPredictiveAnalytics",
                 "title": "Open Predictive Analytics",
                 "category": "APIViz"
+            },
+            {
+                "command": "apiviz.instrumentLine",
+                "title": "Instrument Line",
+                "category": "APIViz"
             }
         ],
-        "views": {
-            "explorer": [
-                {
-                    "id": "apiviz.latencyView",
-                    "name": "API Latency Monitor",
-                    "when": "apiviz.isMonitoring"
-                }
-            ]
-        },
-        "viewsContainers": {
-            "activitybar": [
-                {
-                    "id": "apiviz",
-                    "title": "APIViz",
-                    "icon": "$(pulse)"
-                }
-            ],
-            "panel": [
-                {
-                    "id": "apiviz.panel",
-                    "title": "API Latency Monitor",
-                    "icon": "$(graph)"
-                }
-            ]
-        },
         "views": {
             "apiviz": [
                 {
@@ -118,13 +104,20 @@
                     "id": "apiviz.teamLeaderboardView",
                     "name": "Team Leaderboard",
                     "when": "apiviz.isMonitoring"
-                }
-            ],
-            "apiviz.panel": [
+                },
                 {
                     "id": "apiviz.chartsView",
                     "name": "Performance Charts",
                     "when": "apiviz.isMonitoring"
+                }
+            ]
+        },
+        "viewsContainers": {
+            "activitybar": [
+                {
+                    "id": "apiviz",
+                    "title": "APIViz",
+                    "icon": "$(pulse)"
                 }
             ]
         },
@@ -164,9 +157,9 @@
                 },
                 "apiviz.samplingRate": {
                     "type": "number",
-                    "default": 1.0,
+                    "default": 1,
                     "minimum": 0.1,
-                    "maximum": 1.0,
+                    "maximum": 1,
                     "description": "Sampling rate for API calls (0.1 = 10%, 1.0 = 100%)"
                 },
                 "apiviz.minLatencyThreshold": {
@@ -219,18 +212,19 @@
         "postinstall": "cd agent && npm install"
     },
     "devDependencies": {
-        "@types/vscode": "^1.74.0",
         "@types/node": "16.x",
+        "@types/vscode": "^1.74.0",
+        "@types/ws": "^8.18.1",
         "@typescript-eslint/eslint-plugin": "^5.45.0",
         "@typescript-eslint/parser": "^5.45.0",
+        "@vscode/test-electron": "^2.2.0",
+        "concurrently": "^7.6.0",
         "eslint": "^8.28.0",
         "typescript": "^4.9.4",
-        "@vscode/test-electron": "^2.2.0",
-        "vsce": "^2.15.0",
-        "concurrently": "^7.6.0"
+        "vsce": "^2.15.0"
     },
     "dependencies": {
-        "ws": "^8.13.0",
-        "axios": "^1.4.0"
+        "axios": "^1.4.0",
+        "ws": "^8.13.0"
     }
 }
