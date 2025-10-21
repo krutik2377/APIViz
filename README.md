@@ -1,6 +1,11 @@
 # APIViz - Real-time API Latency Monitor
 
 <img width="1918" height="1043" alt="image" src="https://github.com/user-attachments/assets/232ae5f8-5ccf-4626-bc3e-0adfb80125ab" />
+<img width="1915" height="1078" alt="image" src="https://github.com/user-attachments/assets/97a59a56-45e7-4b4a-b712-b578aab2a499" />
+<img width="1913" height="1079" alt="image" src="https://github.com/user-attachments/assets/ac1d8589-62c4-4b90-8c62-c0f41153d2f5" />
+<img width="1919" height="1075" alt="image" src="https://github.com/user-attachments/assets/91e4ba6a-72f9-4b0b-be1a-1a862fcf0310" />
+<img width="1919" height="1074" alt="image" src="https://github.com/user-attachments/assets/628c654b-b4c7-4497-8a6a-9fb02c8dcab0" />
+
 
 
 🚀 **Visualize API call latency in real-time directly in your VSCode editor**
